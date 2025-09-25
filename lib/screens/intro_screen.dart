@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-/// Modern IntroScreen for Marriage Calculator
+/// Modern IntroScreen for Marriage Calculator - Fully Responsive Version
 class IntroScreen extends StatefulWidget {
   final VoidCallback? onFinish;
 
@@ -15,27 +15,56 @@ class IntroScreen extends StatefulWidget {
   State<IntroScreen> createState() => _IntroScreenState();
 }
 
-class _IntroScreenState extends State<IntroScreen> {
+class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStateMixin {
   final PageController _controller = PageController();
   int _page = 0;
 
-  final List<_IntroPageData> _pages = [_IntroPageData(title: 'DATA MEETS EMOTION', lottie: 'assets/lottie/intro1.json', body: 'Where numbers meet emotions, and joy is in every personalized calculation and insight.'), _IntroPageData(title: 'ADVANCED FEATURES', lottie: 'assets/lottie/intro2.json', body: 'Explore advanced features — unique, creative, and beyond ordinary math to strengthen your bond.'), _IntroPageData(title: 'CALCULATE & SHARE', lottie: 'assets/lottie/intro3.json', body: 'Smart calculations that add fun, connection, and real meaning to every result you share together.')];
+  // Animation controller for the entire screen's initial entrance
+  late AnimationController _entranceController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  // UPDATED: Page titles changed to WELCOME, EXPLORE, CALCULATE
+  final List<_IntroPageData> _pages = [_IntroPageData(title: 'WELCOME', lottie: 'assets/lottie/intro1.json', body: 'Where numbers meet emotions, and joy is in every personalized calculation and insight.'), _IntroPageData(title: 'EXPLORE', lottie: 'assets/lottie/intro2.json', body: 'Explore advanced features — unique, creative, and beyond ordinary math to strengthen your bond.'), _IntroPageData(title: 'CALCULATE', lottie: 'assets/lottie/intro3.json', body: 'Smart calculations that add fun, connection, and real meaning to every result you share together.')];
+
+  @override
+  void initState() {
+    super.initState();
+    // Entrance Animation setup
+    _entranceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+      ),
+    );
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    // Start the entrance animation
+    _entranceController.forward();
+  }
 
   void _next() {
     if (_page < _pages.length - 1) {
-      _controller.nextPage(duration: const Duration(milliseconds: 520), curve: Curves.easeOutCubic);
+      _controller.nextPage(duration: const Duration(milliseconds: 600), curve: Curves.easeInOutCubic);
     } else {
       widget.onFinish?.call();
     }
   }
 
   void _skipToEnd() {
-    _controller.animateToPage(_pages.length - 1, duration: const Duration(milliseconds: 520), curve: Curves.easeOutCubic);
+    _controller.animateToPage(_pages.length - 1, duration: const Duration(milliseconds: 600), curve: Curves.easeInOutCubic);
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _entranceController.dispose();
     super.dispose();
   }
 
@@ -61,7 +90,8 @@ class _IntroScreenState extends State<IntroScreen> {
 
   // glass title with gradient text and subtle underline accent
   Widget _glassTitle(String text, double animValue) {
-    final double scale = 0.96 + (animValue * 0.04);
+    // Increased scale animation for a better 'pop'
+    final double scale = 0.95 + (animValue * 0.08);
     return Center(
       child: Transform.scale(
         scale: scale,
@@ -109,7 +139,7 @@ class _IntroScreenState extends State<IntroScreen> {
     );
   }
 
-  // UPDATED: Glass-outlined Description Card with Text Enhancements
+  // UPDATED: Glass-outlined Description Card
   Widget _buildNeumorphicDescriptionCard(_IntroPageData data, double contentOpacity, double contentTranslateY) {
     const Color shadowColor = Color(0xFF000F22);
     const double borderRadius = 16.0;
@@ -123,16 +153,13 @@ class _IntroScreenState extends State<IntroScreen> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(borderRadius),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0), // Strong blur for glass effect
+              filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(32, 28, 32, 28),
                 decoration: BoxDecoration(
-                  color: _cardBaseColor.withOpacity(0.6), // More transparent base color
+                  color: _cardBaseColor.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(borderRadius),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.15), // Subtle glass border
-                    width: 1.0,
-                  ),
+                  border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.0),
                   boxShadow: [
                     // Inner glow to mimic light on glass edges
                     BoxShadow(color: _glassGradientStart.withOpacity(0.08), offset: const Offset(2, 2), blurRadius: 10, spreadRadius: -2),
@@ -145,20 +172,17 @@ class _IntroScreenState extends State<IntroScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // UPDATED: Text style using Quicksand font
+                    // Text
                     Text(
                       data.body,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.quicksand(
-                        // Changed font to Quicksand
-                        color: Colors.white, // Full opacity white
+                        color: Colors.white,
                         fontSize: 15.5,
                         height: 1.6,
-                        fontWeight: FontWeight.w600, // Semi-bold for sharpness
+                        fontWeight: FontWeight.w600,
                         shadows: [
-                          // Crisp inner shadow
                           Shadow(color: Colors.black.withOpacity(0.6), offset: const Offset(1.0, 1.0), blurRadius: 2),
-                          // Subtle light glow
                           Shadow(color: Colors.white.withOpacity(0.1), offset: const Offset(0, 0), blurRadius: 1),
                         ],
                       ),
@@ -187,9 +211,6 @@ class _IntroScreenState extends State<IntroScreen> {
 
   // builds animated page content using page position
   Widget _buildPage(_IntroPageData data, BuildContext context, int index) {
-    final media = MediaQuery.of(context);
-    final topHeight = media.size.height * 0.32;
-
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -201,20 +222,27 @@ class _IntroScreenState extends State<IntroScreen> {
         }
         final double delta = (page - index);
         final double absDelta = delta.abs().clamp(0.0, 1.0);
-        final double lottieTranslateY = delta * 40;
-        final double lottieScale = 1 - (absDelta * 0.06);
-        final double contentOpacity = (1.0 - absDelta * 0.5).clamp(0.0, 1.0);
-        final double contentTranslateY = delta * 18;
+
+        // Parallax and Scale Animations
+        final double lottieTranslateY = delta * 60;
+        final double lottieScale = 1 - (absDelta * 0.1);
+
+        // Content Fade and Slide Animations
+        final double contentOpacity = (1.0 - absDelta).clamp(0.0, 1.0);
+        final double contentTranslateY = delta * 40;
         final double titleAnim = (1.0 - absDelta).clamp(0.0, 1.0);
 
         return SafeArea(
+          // Use an Expanded/Column layout for responsiveness
           child: Column(
             children: [
-              // Top area: Lottie with parallax + scale
-              SizedBox(
-                height: topHeight,
-                child: Align(
-                  alignment: const Alignment(0, -0.35),
+              // Lottie Animation Area (Responsive: 32% of total height)
+              Expanded(
+                flex: 32, // Relative height for Lottie
+                child: FractionallySizedBox(
+                  alignment: const Alignment(0, -0.15), // Align Lottie slightly higher
+                  heightFactor: 1.0,
+                  widthFactor: 1.0,
                   child: Transform.translate(
                     offset: Offset(0, lottieTranslateY),
                     child: Transform.scale(
@@ -236,14 +264,16 @@ class _IntroScreenState extends State<IntroScreen> {
                 child: Opacity(opacity: 0.9 + (0.1 * titleAnim), child: _glassTitle(data.title, titleAnim)),
               ),
 
-              const SizedBox(height: 28),
+              // Spacer to push content down and manage space above card
+              const Spacer(flex: 2),
 
               // Center: NEUMORPHIC DESCRIPTION CARD
               _buildNeumorphicDescriptionCard(data, contentOpacity, contentTranslateY),
 
-              const SizedBox(height: 78),
+              // Spacer to push buttons down
+              const Spacer(flex: 3),
 
-              // Page indicator placed a bit above the buttons
+              // Page indicator
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: SmoothPageIndicator(
@@ -253,33 +283,31 @@ class _IntroScreenState extends State<IntroScreen> {
                 ),
               ),
 
-              // Buttons stacked vertically
-              Transform.translate(
-                offset: const Offset(0, -6),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Primary full-width modern gradient button (Next / Get Started)
-                      SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: _PrimaryPillButton(label: _page == _pages.length - 1 ? 'GET STARTED' : 'NEXT', onTap: _next),
-                      ),
+              // Buttons area (Fixed height/padding for consistent tap targets)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Primary full-width modern gradient button (Next / Get Started)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: _PrimaryPillButton(label: _page == _pages.length - 1 ? 'GET STARTED' : 'NEXT', onTap: _next),
+                    ),
 
-                      const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                      // Secondary skip button with new glass outline design
-                      SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: _SecondaryOutlineGlassButton(label: 'SKIP', onTap: _skipToEnd),
-                      ),
-                    ],
-                  ),
+                    // Secondary skip button with new glass outline design
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: _SecondaryOutlineGlassButton(label: 'SKIP', onTap: _skipToEnd),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(height: 10), // Safe area margin bottom
             ],
           ),
         );
@@ -289,12 +317,19 @@ class _IntroScreenState extends State<IntroScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Apply the initial entrance animation to the main content
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           _background(),
-          PageView.builder(controller: _controller, itemCount: _pages.length, onPageChanged: (i) => setState(() => _page = i), itemBuilder: (context, i) => _buildPage(_pages[i], context, i)),
+          SlideTransition(
+            position: _slideAnimation,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: PageView.builder(controller: _controller, itemCount: _pages.length, onPageChanged: (i) => setState(() => _page = i), itemBuilder: (context, i) => _buildPage(_pages[i], context, i)),
+            ),
+          ),
         ],
       ),
     );
