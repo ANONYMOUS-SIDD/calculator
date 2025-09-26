@@ -1,23 +1,30 @@
 import 'dart:ui';
 
+import 'package:calculators/screens/call_break_screen.dart';
+import 'package:calculators/screens/game_history_screen.dart';
+import 'package:calculators/screens/marriage_screen.dart';
+import 'package:calculators/screens/rules_screen.dart';
+import 'package:calculators/screens/settings_screen.dart';
+import 'package:calculators/screens/users_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
+// -----------------------------------------------------------
 
-// 🎨 Final Dark Theme Color Palette with Simplified Blue Gradient Shades
+// 🎨 Final Dark Theme Color Palette (Defined here for self-containment)
 class ModernColors {
   // Simplified Gradient Background Colors
   static const Color gradientStart = Color(0xFF1E3C72); // Darker Blue (Near Top Left)
   static const Color gradientEnd = Color(0xFF2A5298); // Lighter Blue (Near Bottom Right)
 
-  // Surface & Accent Colors (Kept dark for contrast against the new background)
+  // Surface & Accent Colors
   static const Color darkSurface = Color(0xFF1A243F); // Card/Search background base
   static const Color neonCyan = Color(0xFF00FFFF); // Primary Accent (Vibrant)
   static const Color electricBlue = Color(0xFF0099FF); // Secondary Accent
   static const Color textLight = Color(0xFFE0E0E0); // Light Text
   static const Color textMuted = Color(0xFFA0A0CC); // Muted Text
 
-  // Grid Accent Colors (Retained)
+  // Grid Accent Colors
   static const Color gridMarriage = Color(0xFF00E5FF);
   static const Color gridCallBreak = Color(0xFF3366FF);
   static const Color gridHistory = Color(0xFF9966FF);
@@ -27,7 +34,7 @@ class ModernColors {
 }
 
 // ----------------------------------------------------
-// 🌟 NEW: Staggered Fade-In Animation for Grid Items
+// Staggered Fade-In Animation for Grid Items
 // ----------------------------------------------------
 class _StaggeredGridFadeIn extends StatefulWidget {
   final int index;
@@ -102,7 +109,6 @@ class HomeScreen extends StatelessWidget {
     final isDesktop = size.width >= 1024;
     final greeting = _greetingMessage();
 
-    // Full-screen diagonal simple blue gradient
     return Scaffold(
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -115,7 +121,6 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
-        // No global fade-in, as grid items will now animate individually
         child: SafeArea(
           child: Column(
             children: [
@@ -144,7 +149,6 @@ class HomeScreen extends StatelessWidget {
                     ),
                     itemCount: _gridItems.length,
                     itemBuilder: (context, index) => _StaggeredGridFadeIn(
-                      // 🌟 Wrap each grid item
                       index: index,
                       child: _ModernGridItemWithFeedback(gridItem: _gridItems[index], isDesktop: isDesktop),
                     ),
@@ -158,7 +162,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // 🔹 MINIMALIST HEADER
+  // 🔹 MINIMALIST HEADER (No changes)
   Widget _buildMinimalistHeader(String greeting, BuildContext context, bool isDesktop) {
     final horizontalPadding = isDesktop ? 40.0 : 20.0;
     final double lottieSize = isDesktop ? 80 : 65;
@@ -195,7 +199,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // 🔹 Modern Search Bar
+  // 🔹 Modern Search Bar (No changes)
   Widget _ModernSearchBar(BuildContext context, bool isDesktop) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(isDesktop ? 25 : 20),
@@ -246,36 +250,57 @@ class _ModernGridItemWithFeedback extends StatefulWidget {
 class _ModernGridItemWithFeedbackState extends State<_ModernGridItemWithFeedback> {
   bool _isPressed = false;
 
+  // 🌟 FINAL NAVIGATION LOGIC: Routes to your specific pages
+  Widget _getDestinationScreen(String label, Color color, IconData iconData) {
+    // This logic ensures the correct screen object is instantiated
+    switch (label) {
+      case "Marriage":
+        return MarriageScreen(tag: label, color: color, iconData: iconData);
+      case "Call Break":
+        return CallBreakScreen(tag: label, color: color, iconData: iconData);
+      case "Game History":
+        return GameHistoryScreen(tag: label, color: color, iconData: iconData);
+      case "Users":
+        return UsersScreen(tag: label, color: color, iconData: iconData);
+      case "Rules":
+        return RulesScreen(tag: label, color: color, iconData: iconData);
+      case "Settings":
+        return SettingsScreen(tag: label, color: color, iconData: iconData);
+      default:
+        // Fallback in case of a missing screen file or label mismatch
+        return Scaffold(
+          body: Center(
+            child: Text("Error: Screen not found for $label", style: GoogleFonts.poppins(color: Colors.red)),
+          ),
+        );
+    }
+  }
+
   // Function to handle navigation with a custom animated transition
   void _handleTap(BuildContext context, String label) {
-    // 1. Temporarily show press feedback
     setState(() => _isPressed = true);
 
-    // 2. Navigate after a short delay to allow the animation to show
     Future.delayed(const Duration(milliseconds: 150), () {
-      setState(() => _isPressed = false); // Release press state
+      setState(() => _isPressed = false);
 
-      // Navigate to a placeholder screen with a Fade/Slide transition
+      final destinationScreen = _getDestinationScreen(widget.gridItem.label, widget.gridItem.color, widget.gridItem.icon);
+
+      // Navigate with Hero and Slide/Fade transition
       Navigator.of(context).push(
         PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 500), // Slightly longer for smoother Hero
-          pageBuilder: (context, animation, secondaryAnimation) => _PlaceholderDetailScreen(
-            title: label,
-            tag: label, // Pass the tag for Hero
-            color: widget.gridItem.color, // Pass the color for consistency
-            iconData: widget.gridItem.icon, // Pass the icon data for the Hero
-          ),
+          transitionDuration: const Duration(milliseconds: 500),
+          pageBuilder: (context, animation, secondaryAnimation) => destinationScreen,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = Offset(0.0, 1.0); // Page slides up from bottom
             const end = Offset.zero;
-            const curve = Curves.easeOutCubic; // More dramatic curve for page transition
+            const curve = Curves.easeOutCubic; // Smooth, dramatic curve
 
             var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
             return SlideTransition(
               position: animation.drive(tween),
               child: FadeTransition(
-                opacity: animation, // Add a fade effect
+                opacity: animation, // Added fade for a smoother entrance
                 child: child,
               ),
             );
@@ -293,29 +318,26 @@ class _ModernGridItemWithFeedbackState extends State<_ModernGridItemWithFeedback
     final borderRadius = widget.isDesktop ? 18.0 : 16.0;
 
     return GestureDetector(
-      // Using GestureDetector for fine-grained control over press state
       onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => _handleTap(context, widget.gridItem.label), // Call navigation on tap up
+      onTapUp: (_) => _handleTap(context, widget.gridItem.label),
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150), // Increased duration for smoother press effect
+        duration: const Duration(milliseconds: 150),
         curve: Curves.easeOut,
-        // ENHANCED PRESS ANIMATION: Subtle 3D-like shrink and opacity adjustment
+        // ENHANCED PRESS ANIMATION
         transform: Matrix4.identity()
           ..scale(_isPressed ? 0.96 : 1.0)
-          ..translate(0.0, _isPressed ? 1.0 : 0.0), // Slight downward shift
+          ..translate(0.0, _isPressed ? 1.0 : 0.0),
         decoration: BoxDecoration(
-          color: ModernColors.darkSurface.withOpacity(_isPressed ? 0.8 : 0.6), // Darker when pressed
+          color: ModernColors.darkSurface.withOpacity(_isPressed ? 0.8 : 0.6),
           borderRadius: BorderRadius.circular(borderRadius),
-          border: Border.all(color: color.withOpacity(_isPressed ? 0.8 : 0.4), width: _isPressed ? 2.5 : 1.5), // Accent border highlights
+          border: Border.all(color: color.withOpacity(_isPressed ? 0.8 : 0.4), width: _isPressed ? 2.5 : 1.5),
           // INNER SHADOW/GRADIENT
           gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [ModernColors.darkSurface.withOpacity(_isPressed ? 0.75 : 0.6), ModernColors.darkSurface.withOpacity(_isPressed ? 0.95 : 0.8)], stops: const [0.0, 1.0]),
 
           // Outer Shadow for elevation
           boxShadow: [
-            // Darker shadow for depth
             BoxShadow(color: Colors.black.withOpacity(_isPressed ? 0.8 : 0.5), blurRadius: 25, spreadRadius: 2, offset: Offset(_isPressed ? 1 : 4, _isPressed ? 1 : 4)),
-            // Accent color glow shadow (subtle)
             BoxShadow(color: color.withOpacity(_isPressed ? 0.3 : 0.15), blurRadius: 10, spreadRadius: 1, offset: const Offset(-2, -2)),
           ],
         ),
@@ -329,7 +351,7 @@ class _ModernGridItemWithFeedbackState extends State<_ModernGridItemWithFeedback
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Icon with Gradient Background and HERO
+                  // Icon with Gradient Background and HERO Source
                   Container(
                     width: iconContainerSize,
                     height: iconContainerSize,
@@ -345,10 +367,10 @@ class _ModernGridItemWithFeedbackState extends State<_ModernGridItemWithFeedback
                     ),
                   ),
                   SizedBox(height: widget.isDesktop ? 10 : 8),
-                  // Grid Text Style (Inter) - assuming you decided on Inter from previous iterations
+                  // Grid Text Style
                   Text(
-                    widget.gridItem.label.toUpperCase(), // Ensure uppercase
-                    style: GoogleFonts.inter(fontSize: widget.isDesktop ? 15 : 13, fontWeight: FontWeight.w600, color: ModernColors.textLight, letterSpacing: 1.0),
+                    widget.gridItem.label.toString(),
+                    style: GoogleFonts.inter(fontSize: widget.isDesktop ? 17 : 13, fontWeight: FontWeight.w600, color: ModernColors.textLight, letterSpacing: 1.0),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -366,67 +388,6 @@ class _ModernGridItemWithFeedbackState extends State<_ModernGridItemWithFeedback
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// 🔹 Placeholder Screen for Navigation Demonstration
-class _PlaceholderDetailScreen extends StatelessWidget {
-  final String title;
-  final String tag;
-  final Color color;
-  final IconData iconData; // Added iconData to receive the icon
-
-  const _PlaceholderDetailScreen({
-    required this.title,
-    required this.tag,
-    required this.color,
-    required this.iconData, // Required in constructor
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ModernColors.darkSurface,
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [ModernColors.gradientStart, ModernColors.gradientEnd]),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 🌟 HERO WIDGET HERE (Destination)
-              Hero(
-                tag: tag,
-                child: Container(
-                  width: 100, // Larger size for the destination icon container
-                  height: 100,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [color, Color.lerp(color, ModernColors.electricBlue, 0.4)!], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: color.withOpacity(0.7), blurRadius: 15, offset: const Offset(4, 4))],
-                  ),
-                  child: Icon(iconData, size: 50, color: ModernColors.textLight), // 🌟 Use the actual iconData here
-                ),
-              ),
-              const SizedBox(height: 30),
-              Text('NAVIGATED TO', style: GoogleFonts.poppins(fontSize: 18, color: ModernColors.textMuted, letterSpacing: 2)),
-              Text(
-                title.toUpperCase(),
-                style: GoogleFonts.poppins(fontSize: 30, fontWeight: FontWeight.bold, color: ModernColors.neonCyan),
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Go Back'),
-                style: ElevatedButton.styleFrom(backgroundColor: ModernColors.electricBlue, foregroundColor: ModernColors.textLight, padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15), textStyle: GoogleFonts.poppins(fontSize: 16)),
-              ),
-            ],
           ),
         ),
       ),

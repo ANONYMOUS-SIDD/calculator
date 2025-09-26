@@ -3,8 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'base_detail_screen.dart'; // Import the template
 
-// The following classes/constants would typically be in a single 'theme' or 'constants' file.
-// Redefining them here for completeness but ensure your project structure is clean.
+// Assuming ModernColors is defined or imported globally
 class ModernColors {
   static const Color gradientStart = Color(0xFF1E3C72);
   static const Color gradientEnd = Color(0xFF2A5298);
@@ -13,49 +12,52 @@ class ModernColors {
   static const Color textMuted = Color(0xFFA0A0CC);
 }
 
-class MarriageScreen extends StatelessWidget {
+class GameHistoryScreen extends StatelessWidget {
   final String tag;
   final Color color;
   final IconData iconData;
 
-  const MarriageScreen({super.key, required this.tag, required this.color, required this.iconData});
+  const GameHistoryScreen({super.key, required this.tag, required this.color, required this.iconData});
 
   @override
   Widget build(BuildContext context) {
     return BaseDetailScreen(
-      title: "Marriage", // Specific title
+      title: "Game History",
       heroTag: tag,
       color: color,
       iconData: iconData,
-      // 👈 This is the UNIQUE content area for the Marriage page
-      bodyContent: SingleChildScrollView(
+      bodyContent: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Current Game Status",
-              style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: ModernColors.neonCyan),
+              "Past Matches & Records",
+              style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: color),
             ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: ModernColors.darkSurface.withOpacity(0.5), borderRadius: BorderRadius.circular(12)),
-              child: Text("Implement your live game data, scoreboards, and play buttons here. This is the custom functionality for the Marriage game.", style: GoogleFonts.inter(fontSize: 16, color: ModernColors.textMuted)),
-            ),
-            // Add more widgets like buttons, lists, or forms specific to Marriage game...
-            const SizedBox(height: 30),
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Marriage Game Logic: Start new game, etc.
-                },
-                icon: const Icon(Icons.play_arrow),
-                label: const Text("Start New Marriage Game"),
-              ),
-            ),
+            const SizedBox(height: 15),
+            Expanded(child: ListView(children: [_buildHistoryTile("Match #101 - Victory", "Call Break, 4 players, 20 rounds", Icons.military_tech), _buildHistoryTile("Match #100 - Loss", "Marriage, 3 players, 1 hour 30 min", Icons.flag), _buildHistoryTile("Match #99 - Draw", "Call Break, Quick Match", Icons.replay)])),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryTile(String title, String subtitle, IconData icon) {
+    return Card(
+      color: ModernColors.darkSurface.withOpacity(0.7),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: Icon(icon, color: color, size: 30),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(color: ModernColors.neonCyan, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(subtitle, style: GoogleFonts.inter(color: ModernColors.textMuted)),
+        trailing: const Icon(Icons.arrow_forward_ios, color: ModernColors.textMuted, size: 16),
+        onTap: () {
+          // Navigate to detailed match summary
+        },
       ),
     );
   }
