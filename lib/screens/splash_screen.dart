@@ -29,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     // Navigate to calculator after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/introScreen');
+      Navigator.pushReplacementNamed(context, '/homeScreen');
     });
   }
 

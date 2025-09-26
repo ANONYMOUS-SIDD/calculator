@@ -19,8 +19,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
       home: SplashScreen(), // initial route
       routes: {
-        '/calculator': (context) => const CalculatorScreen(),
-        '/introScreen': (context) => const IntroScreen(), // define your calculator screen here
+        '/introScreen': (context) => const IntroScreen(),
+        '/homeScreen': (context) => const HomeScreen(), // define your calculator screen here
       },
     );
   }
