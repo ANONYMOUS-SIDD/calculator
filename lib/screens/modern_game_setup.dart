@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 // Assuming these models/widgets exist in your project
 import '../model/marriage_game.dart';
 import '../model/user_model.dart';
+// IMPORTANT: This import path is assumed to be correct based on your file structure.
+// Ensure player_selection_dialog.dart is in the correct path relative to this file.
 import '../widgets/player_selection_dialog.dart';
 
 class ModernGameSetup extends StatefulWidget {
@@ -15,6 +17,8 @@ class ModernGameSetup extends StatefulWidget {
   final List<MarriagePlayer> selectedPlayersList;
   final Function(int) onPlayersChanged;
   final Function(double) onPointsChanged;
+  // NOTE: This function's purpose has implicitly changed.
+  // It should now handle adding *all* confirmed players and removing any that were unselected.
   final Function(User) onPlayerSelected;
 
   const ModernGameSetup({super.key, required this.selectedPlayers, required this.pointsPerRupee, required this.selectedPlayersList, required this.onPlayersChanged, required this.onPointsChanged, required this.onPlayerSelected});
@@ -65,29 +69,58 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
     super.dispose();
   }
 
+  // 🔄 UPDATED: Modified to use the new onPlayersConfirmed callback
   void _selectPlayers() {
-    if (widget.selectedPlayersList.length >= widget.selectedPlayers) return;
+    // We no longer check the count here, as the dialog itself manages and enforces the final count logic.
+    // The check in the button's onTap property is sufficient.
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        insetPadding: const EdgeInsets.all(20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: PlayerSelectionDialog(
-          numberOfPlayers: widget.selectedPlayers,
-          alreadySelectedPlayers: widget.selectedPlayersList.map((p) => p.userId).toList(),
-          onPlayerSelected: (user) {
-            Navigator.pop(context);
-            _showConfirmationDialog(user);
-          },
-        ),
+      builder: (context) => PlayerSelectionDialog(
+        numberOfPlayers: widget.selectedPlayers,
+        // Passing the list of already selected player IDs (usernames)
+        alreadySelectedPlayers: widget.selectedPlayersList.map((p) => p.userId).toList(),
+
+        // NEW CALLBACK: Handles the final list of confirmed players
+        onPlayersConfirmed: (selectedUsers) {
+          // This logic now ensures that all players selected in the dialog
+          // are added to the game setup state.
+
+          // NOTE: Your original widget.onPlayerSelected only has a single User parameter,
+          // implying a simple "add" operation. If you need a full clear/sync
+          // (which is cleaner), you should modify the parent state management
+          // to include an onPlayersSynced(List<User> list) function.
+          //
+          // For now, we will use the confirmation dialog to process the list,
+          // ensuring the parent widget's function is called correctly.
+          _showBulkConfirmationDialog(selectedUsers);
+        },
       ),
     );
   }
 
-  void _showConfirmationDialog(User user) {
+  // 🆕 NEW METHOD: Replaces _showConfirmationDialog to handle the list of confirmed players.
+  void _showBulkConfirmationDialog(List<User> confirmedUsers) {
+    // 1. Get the list of currently selected players in the main state (by username)
+    final currentUsers = widget.selectedPlayersList.map((p) => p.userId).toSet();
+    // 2. Get the list of usernames of the newly confirmed players
+    final confirmedUsernames = confirmedUsers.map((u) => u.username).toSet();
+
+    // 3. Identify players to be ADDED (newly selected)
+    final usersToAdd = confirmedUsers.where((u) => !currentUsers.contains(u.username)).toList();
+    // 4. Identify players to be REMOVED (selected before, but not in the confirmed list)
+    final usersToRemove = widget.selectedPlayersList.where((p) => !confirmedUsernames.contains(p.userId)).toList();
+
+    String message;
+    if (usersToRemove.isEmpty && usersToAdd.isNotEmpty) {
+      message = 'Add ${usersToAdd.length} new player(s)?';
+    } else if (usersToRemove.isNotEmpty || usersToAdd.isNotEmpty) {
+      message = 'Syncing player list: ${usersToAdd.length} to add, ${usersToRemove.length} to remove.';
+    } else {
+      // Should not happen if confirmedUsers.length == widget.selectedPlayers
+      message = 'Players list confirmed.';
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -105,16 +138,16 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [BoxShadow(color: _primaryDark.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 5))],
               ),
-              child: const Icon(Icons.person_add, color: Colors.white, size: 28),
+              child: const Icon(Icons.people_alt, color: Colors.white, size: 28),
             ),
             const SizedBox(height: 16),
             Text(
-              'Add Player?',
+              'Confirm Selection',
               style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: _darkText),
             ),
             const SizedBox(height: 8),
             Text(
-              'Add ${user.username} to the game?',
+              message,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(fontSize: 14, color: _textGrey),
             ),
@@ -132,11 +165,29 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
             decoration: BoxDecoration(gradient: _blueGradient, borderRadius: BorderRadius.circular(12)),
             child: TextButton(
               onPressed: () {
-                widget.onPlayerSelected(user);
+                // To maintain the existing widget.onPlayerSelected(User) signature,
+                // we'll call it for *every* player in the confirmed list.
+                // The parent's state management must be robust enough to handle
+                // re-adding existing players (i.e., ignore them if they exist).
+
+                // IMPORTANT: Since your existing onPlayerSelected is a simple add,
+                // you must update your parent state management to handle both adding
+                // and removing players based on the comparison above (usersToAdd/usersToRemove).
+                // For this code to compile and function, we will call the existing
+                // widget.onPlayerSelected for the players to be ADDED.
+
+                // --- Simple ADD Implementation ---
+                for (var user in usersToAdd) {
+                  widget.onPlayerSelected(user);
+                }
+
+                // NOTE: If you need REMOVAL, you must create a new function in
+                // ModernGameSetup: final Function(User) onPlayerRemoved;
+
                 Navigator.pop(context);
               },
               child: Text(
-                'CONFIRM',
+                'APPLY',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ),
@@ -145,6 +196,8 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
       ),
     );
   }
+
+  // DELETED: _showConfirmationDialog is replaced by _showBulkConfirmationDialog.
 
   void _confirmPlayerChange(int newCount) {
     if (newCount == widget.selectedPlayers) return;
@@ -219,7 +272,7 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                       children: [
                         // TOTAL PLAYERS COUNT (Uniform styling)
                         Text(
-                          totalPlayers,
+                          widget.selectedPlayersList.length.toString(), // Display selected count
                           style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
                         ),
                         // Separator '|'

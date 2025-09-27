@@ -22,7 +22,7 @@ class User extends HiveObject {
   User({required this.username, this.profileImagePath, this.wins = 0, this.rank = 0});
 
   // Helper method for initial app load
-  static User defaultUser() => User(username: "You (Player Gamma)", profileImagePath: null, wins: 55, rank: 42);
+  static User defaultUser() => User(username: "Anonymous", profileImagePath: null, wins: 55, rank: 42);
 }
 
 // 2. Hive Initialization Function
