@@ -1,4 +1,5 @@
 // screens/marriage_screen.dart
+import 'package:calculators/screens/player_cards_grid.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -6,7 +7,6 @@ import '../model/marriage_game.dart';
 import '../model/user_model.dart';
 import '../screens/user_app_bar.dart';
 import 'modern_game_setup.dart';
-import 'player_cards_grid.dart';
 import 'results_table.dart';
 
 class MarriageScreen extends StatefulWidget {
@@ -26,12 +26,29 @@ class _MarriageScreenState extends State<MarriageScreen> {
   final List<MarriagePlayer> _players = [];
   final List<MarriageGame> _gameHistory = [];
 
-  void _onPlayerSelected(User user) {
-    if (_players.length < _selectedPlayers) {
-      setState(() {
+  // ❌ REMOVE THE OLD FUNCTION
+  // void _onPlayerSelected(User user) {
+  //   if (_players.length < _selectedPlayers) {
+  //     setState(() {
+  //       _players.add(MarriagePlayer(userId: user.username, userName: user.username, userImage: user.profileImagePath));
+  //     });
+  //   }
+  // }
+
+  // ✅ ADD THE NEW FUNCTION to handle the list of confirmed users
+  void _onPlayersConfirmed(List<User> confirmedUsers) {
+    setState(() {
+      // 1. Clear the old list
+      _players.clear();
+
+      // 2. Add all confirmed users to the game's player list
+      for (var user in confirmedUsers) {
         _players.add(MarriagePlayer(userId: user.username, userName: user.username, userImage: user.profileImagePath));
-      });
-    }
+      }
+
+      // 3. Update the total player count to match the selection
+      _selectedPlayers = confirmedUsers.length;
+    });
   }
 
   void _updatePlayerPoints(int index, double points) {
@@ -72,85 +89,91 @@ class _MarriageScreenState extends State<MarriageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
-      body: Column(
-        children: [
-          const UserAppBar(title: "Marriage"),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFF),
+        body: Column(
+          children: [
+            const UserAppBar(title: "Marriage"),
 
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Game Setup
-                  ModernGameSetup(
-                    selectedPlayers: _selectedPlayers,
-                    pointsPerRupee: _pointsPerRupee,
-                    selectedPlayersList: _players,
-                    onPlayersChanged: (value) => setState(() {
-                      _selectedPlayers = value;
-                      _players.clear();
-                    }),
-                    onPointsChanged: (value) => setState(() => _pointsPerRupee = value),
-                    onPlayerSelected: _onPlayerSelected,
-                  ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Game Setup
+                    ModernGameSetup(
+                      selectedPlayers: _selectedPlayers,
+                      pointsPerRupee: _pointsPerRupee,
+                      selectedPlayersList: _players,
+                      onPlayersChanged: (value) => setState(() {
+                        _selectedPlayers = value;
+                        _players.clear();
+                      }),
+                      onPointsChanged: (value) => setState(() => _pointsPerRupee = value),
 
-                  // Players Grid
-                  if (_players.isNotEmpty) PlayerCardsGrid(players: _players, onPointsChanged: _updatePlayerPoints, onDoubleeToggle: _toggleDoublee),
+                      // 🔥 UPDATE THIS PROP 🔥
+                      // You must also update the ModernGameSetup widget to accept
+                      // a prop named 'onPlayersConfirmed' instead of 'onPlayerSelected'.
+                      onPlayersConfirmed: _onPlayersConfirmed,
+                    ),
 
-                  // Results
-                  if (_gameHistory.isNotEmpty) ResultsTable(players: _players, pointsPerRupee: _pointsPerRupee),
+                    // Players Grid
+                    if (_players.isNotEmpty) PlayerCardsGrid(players: _players, onPointsChanged: _updatePlayerPoints, onDoubleeToggle: _toggleDoublee),
 
-                  const SizedBox(height: 20),
-                ],
+                    // Results
+                    if (_gameHistory.isNotEmpty) ResultsTable(players: _players, pointsPerRupee: _pointsPerRupee),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Bottom Actions
-          if (_players.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -2))],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _newGame,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        side: const BorderSide(color: Color(0xFF0066FF)),
-                      ),
-                      child: Text(
-                        'NEW GAME',
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: const Color(0xFF0066FF)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _calculateGame,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: const Color(0xFF0066FF),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 2,
-                      ),
-                      child: Text(
-                        'CALCULATE',
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
+            // Bottom Actions
+            if (_players.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -2))],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _newGame,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: const BorderSide(color: Color(0xFF0066FF)),
+                        ),
+                        child: Text(
+                          'NEW GAME',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: const Color(0xFF0066FF)),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _calculateGame,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: const Color(0xFF0066FF),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 2,
+                        ),
+                        child: Text(
+                          'CALCULATE',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

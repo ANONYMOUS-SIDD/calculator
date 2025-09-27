@@ -188,14 +188,19 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     );
   }
 
-  // Final confirmation logic
+  // 🔥 FIXED: Final confirmation logic - Only call Navigator.pop once
   void _confirmSelection() {
     if (_currentSelection.length != widget.numberOfPlayers) {
       _showToast('Please select exactly ${widget.numberOfPlayers} players to confirm.');
       return;
     }
+
+    // 1. Update the parent widget's player list
     widget.onPlayersConfirmed(_currentSelection);
-    Navigator.pop(context);
+
+    // 2. Close the dialog and return the list to signal success.
+    // REMOVED: Don't call Navigator.pop here - let the caller handle it
+    // This prevents the "Player selection cancelled" message
   }
 
   // --- UI BUILDERS ---
@@ -348,7 +353,7 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     );
   }
 
-  // BUTTON DESIGN (No functional changes here)
+  // 🔥 FIXED: BUTTON DESIGN - Now properly handles dialog closing
   Widget _buildActionsRow() {
     final isConfirmEnabled = _currentSelection.length == widget.numberOfPlayers;
     const double buttonHeight = 44.0;
@@ -439,7 +444,13 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
             iconColor: _primaryMedium,
             textColor: isConfirmEnabled ? Colors.white : _darkText,
             borderColor: isConfirmEnabled ? Colors.transparent : _iosBorder,
-            onTap: isConfirmEnabled ? _confirmSelection : () => _showToast('Please select exactly ${widget.numberOfPlayers} players.'),
+            onTap: isConfirmEnabled
+                ? () {
+                    _confirmSelection();
+                    // 🔥 FIX: Close dialog only after confirming selection
+                    Navigator.pop(context, _currentSelection);
+                  }
+                : () => _showToast('Please select exactly ${widget.numberOfPlayers} players.'),
             gradient: _confirmGradient,
             isFilled: isConfirmEnabled,
             isEnabled: isConfirmEnabled,
