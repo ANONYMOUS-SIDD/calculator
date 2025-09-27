@@ -1,19 +1,15 @@
+// screens/marriage_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'base_detail_screen.dart'; // Import the template
+import '../model/marriage_game.dart';
+import '../model/user_model.dart';
+import '../screens/user_app_bar.dart';
+import 'modern_game_setup.dart';
+import 'player_cards_grid.dart';
+import 'results_table.dart';
 
-// The following classes/constants would typically be in a single 'theme' or 'constants' file.
-// Redefining them here for completeness but ensure your project structure is clean.
-class ModernColors {
-  static const Color gradientStart = Color(0xFF1E3C72);
-  static const Color gradientEnd = Color(0xFF2A5298);
-  static const Color darkSurface = Color(0xFF1A243F);
-  static const Color neonCyan = Color(0xFF00FFFF);
-  static const Color textMuted = Color(0xFFA0A0CC);
-}
-
-class MarriageScreen extends StatelessWidget {
+class MarriageScreen extends StatefulWidget {
   final String tag;
   final Color color;
   final IconData iconData;
@@ -21,41 +17,140 @@ class MarriageScreen extends StatelessWidget {
   const MarriageScreen({super.key, required this.tag, required this.color, required this.iconData});
 
   @override
+  State<MarriageScreen> createState() => _MarriageScreenState();
+}
+
+class _MarriageScreenState extends State<MarriageScreen> {
+  int _selectedPlayers = 4;
+  double _pointsPerRupee = 1.0;
+  final List<MarriagePlayer> _players = [];
+  final List<MarriageGame> _gameHistory = [];
+
+  void _onPlayerSelected(User user) {
+    if (_players.length < _selectedPlayers) {
+      setState(() {
+        _players.add(MarriagePlayer(userId: user.username, userName: user.username, userImage: user.profileImagePath));
+      });
+    }
+  }
+
+  void _updatePlayerPoints(int index, double points) {
+    setState(() {
+      _players[index].maalPoints = points;
+    });
+  }
+
+  void _toggleDoublee(int index) {
+    setState(() {
+      _players[index].isDoublee = !_players[index].isDoublee;
+    });
+  }
+
+  void _calculateGame() {
+    final game = MarriageGame(id: DateTime.now().millisecondsSinceEpoch.toString(), createdAt: DateTime.now(), numberOfPlayers: _selectedPlayers, pointsPerRupee: _pointsPerRupee, players: List.from(_players));
+
+    setState(() {
+      _gameHistory.insert(0, game);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Game calculated successfully!'),
+        backgroundColor: const Color(0xFF0066FF),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  void _newGame() {
+    setState(() {
+      _players.clear();
+      _gameHistory.clear();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BaseDetailScreen(
-      title: "Marriage", // Specific title
-      heroTag: tag,
-      color: color,
-      iconData: iconData,
-      // 👈 This is the UNIQUE content area for the Marriage page
-      bodyContent: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Current Game Status",
-              style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: ModernColors.neonCyan),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: ModernColors.darkSurface.withOpacity(0.5), borderRadius: BorderRadius.circular(12)),
-              child: Text("Implement your live game data, scoreboards, and play buttons here. This is the custom functionality for the Marriage game.", style: GoogleFonts.inter(fontSize: 16, color: ModernColors.textMuted)),
-            ),
-            // Add more widgets like buttons, lists, or forms specific to Marriage game...
-            const SizedBox(height: 30),
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Marriage Game Logic: Start new game, etc.
-                },
-                icon: const Icon(Icons.play_arrow),
-                label: const Text("Start New Marriage Game"),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFF),
+      body: Column(
+        children: [
+          const UserAppBar(title: "Marriage"),
+
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Game Setup
+                  ModernGameSetup(
+                    selectedPlayers: _selectedPlayers,
+                    pointsPerRupee: _pointsPerRupee,
+                    selectedPlayersList: _players,
+                    onPlayersChanged: (value) => setState(() {
+                      _selectedPlayers = value;
+                      _players.clear();
+                    }),
+                    onPointsChanged: (value) => setState(() => _pointsPerRupee = value),
+                    onPlayerSelected: _onPlayerSelected,
+                  ),
+
+                  // Players Grid
+                  if (_players.isNotEmpty) PlayerCardsGrid(players: _players, onPointsChanged: _updatePlayerPoints, onDoubleeToggle: _toggleDoublee),
+
+                  // Results
+                  if (_gameHistory.isNotEmpty) ResultsTable(players: _players, pointsPerRupee: _pointsPerRupee),
+
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          // Bottom Actions
+          if (_players.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -2))],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _newGame,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: const BorderSide(color: Color(0xFF0066FF)),
+                      ),
+                      child: Text(
+                        'NEW GAME',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: const Color(0xFF0066FF)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _calculateGame,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: const Color(0xFF0066FF),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 2,
+                      ),
+                      child: Text(
+                        'CALCULATE',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
