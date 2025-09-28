@@ -29,6 +29,9 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
   final RxBool _isExpanded = true.obs;
   late final TextEditingController _pointsController;
 
+  // Add a flag to track if we're currently editing points
+  final RxBool _isEditingPoints = false.obs;
+
   // --- REVERTED COLOR CONSTANTS TO ORIGINAL GRADIENT THEME ---
   static const Color _primaryDark = Color(0xFF1E3A8A);
   static const Color _primaryMedium = Color(0xFF2563EB);
@@ -61,8 +64,10 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
   void didUpdateWidget(covariant ModernGameSetup oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Use Obx reactive approach to handle player selection completion
-    _handlePlayerSelectionCompletion();
+    // Only handle player selection completion if not currently editing points
+    if (!_isEditingPoints.value) {
+      _handlePlayerSelectionCompletion();
+    }
 
     // 2. Point Controller Update Logic
     if (oldWidget.pointsPerRupee != widget.pointsPerRupee) {
@@ -77,8 +82,8 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
   void _handlePlayerSelectionCompletion() {
     final bool isComplete = widget.selectedPlayersList.length >= widget.selectedPlayers;
 
-    // Automatically collapse when all players are selected
-    if (isComplete && _isExpanded.value) {
+    // Automatically collapse when all players are selected AND not editing points
+    if (isComplete && _isExpanded.value && !_isEditingPoints.value) {
       _isExpanded.value = false;
     }
   }
@@ -87,6 +92,7 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
   void dispose() {
     _pointsController.dispose();
     _isExpanded.close(); // Important: close the Rx variable
+    _isEditingPoints.close();
     super.dispose();
   }
 
@@ -145,7 +151,12 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
     String pointsValue = widget.pointsPerRupee.toStringAsFixed(0);
 
     return GestureDetector(
-      onTap: () => setState(() => _isExpanded.value = !_isExpanded.value),
+      onTap: () {
+        // Only allow toggle if not currently editing points
+        if (!_isEditingPoints.value) {
+          _isExpanded.value = !_isExpanded.value;
+        }
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -376,6 +387,10 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                             hintText: '1',
                             hintStyle: GoogleFonts.inter(color: const Color(0xFFD1D5DB)),
                           ),
+                          onTap: () {
+                            // Set editing flag when user starts typing
+                            _isEditingPoints.value = true;
+                          },
                           onChanged: (value) {
                             int? parsedValue = int.tryParse(value);
                             if (parsedValue != null && parsedValue > 0) {
@@ -392,6 +407,27 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                               _pointsController.text = finalValue.toString();
                             }
                             widget.onPointsChanged(finalValue.toDouble());
+
+                            // Finish editing when tapping outside
+                            _isEditingPoints.value = false;
+                            // Now check if we should collapse
+                            _handlePlayerSelectionCompletion();
+                          },
+                          onEditingComplete: () {
+                            // When user presses tick/done on keyboard
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            int? finalValue = int.tryParse(_pointsController.text);
+                            if (finalValue == null || finalValue <= 0) {
+                              finalValue = widget.pointsPerRupee.round() > 0 ? widget.pointsPerRupee.round() : 1;
+                            }
+                            if (_pointsController.text != finalValue.toString()) {
+                              _pointsController.text = finalValue.toString();
+                            }
+                            widget.onPointsChanged(finalValue.toDouble());
+
+                            // Finish editing and check if we should collapse
+                            _isEditingPoints.value = false;
+                            _handlePlayerSelectionCompletion();
                           },
                         ),
                       ),
