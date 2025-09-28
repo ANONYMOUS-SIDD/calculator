@@ -1,4 +1,5 @@
-// models/marriage_game.dart
+// lib/model/marriage_game.dart (Updated)
+
 class MarriageGame {
   final String id;
   final DateTime createdAt;
@@ -16,7 +17,6 @@ class MarriageGame {
   Map<String, double> calculateResults() {
     // Marriage game calculation logic
     final results = <String, double>{};
-    // Add your game calculation logic here
     return results;
   }
 }
@@ -25,10 +25,47 @@ class MarriagePlayer {
   final String userId;
   final String userName;
   final String? userImage;
-  double maalPoints;
-  bool isSequence;
-  bool isDoublee;
-  double pointsEarned;
+  final double maalPoints;
+  final bool isSequence;
+  final bool isDoublee;
+  final double pointsEarned;
 
-  MarriagePlayer({required this.userId, required this.userName, this.userImage, this.maalPoints = 0, this.isSequence = false, this.isDoublee = false, this.pointsEarned = 0});
+  // ✅ FIX: Added the missing 'currentScore' property
+  final int currentScore;
+
+  MarriagePlayer({
+    required this.userId,
+    required this.userName,
+    this.userImage,
+    this.maalPoints = 0,
+    this.isSequence = false,
+    this.isDoublee = false,
+    this.pointsEarned = 0,
+    // ✅ FIX: Added 'currentScore' to the constructor
+    this.currentScore = 0,
+  });
+
+  /// Creates a copy of the MarriagePlayer with optional new values.
+  MarriagePlayer copyWith({
+    String? userId,
+    String? userName,
+    String? userImage,
+    double? maalPoints,
+    bool? isSequence,
+    bool? isDoublee,
+    double? pointsEarned,
+    // ✅ FIX: Added 'currentScore' to copyWith
+    int? currentScore,
+  }) {
+    return MarriagePlayer(
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userImage: userImage ?? this.userImage,
+      maalPoints: maalPoints ?? this.maalPoints,
+      isSequence: isSequence ?? this.isSequence,
+      isDoublee: isDoublee ?? this.isDoublee,
+      pointsEarned: pointsEarned ?? this.pointsEarned,
+      currentScore: currentScore ?? this.currentScore, // Use it
+    );
+  }
 }

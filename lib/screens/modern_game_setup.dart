@@ -1,34 +1,23 @@
-// widgets/modern_game_setup.dart
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // Assuming these models/widgets exist in your project
 import '../model/marriage_game.dart';
 import '../model/user_model.dart';
-// IMPORTANT: This import path is assumed to be correct based on your file structure.
 import '../widgets/player_selection_dialog.dart'; // Ensure this path is correct
 
 class ModernGameSetup extends StatefulWidget {
-  final int selectedPlayers;
+  final int selectedPlayers; // The target/maximum player count
   final double pointsPerRupee;
+  // This list now comes directly from the PlayerController and is reactive.
   final List<MarriagePlayer> selectedPlayersList;
   final Function(int) onPlayersChanged;
   final Function(double) onPointsChanged;
-
-  // 🔥 UPDATED PROP NAME AND SIGNATURE 🔥
   final Function(List<User> confirmedUsers) onPlayersConfirmed;
 
-  const ModernGameSetup({
-    super.key,
-    required this.selectedPlayers,
-    required this.pointsPerRupee,
-    required this.selectedPlayersList,
-    required this.onPlayersChanged,
-    required this.onPointsChanged,
-    required this.onPlayersConfirmed, // Use the new prop here
-  });
+  const ModernGameSetup({super.key, required this.selectedPlayers, required this.pointsPerRupee, required this.selectedPlayersList, required this.onPlayersChanged, required this.onPointsChanged, required this.onPlayersConfirmed});
 
   @override
   State<ModernGameSetup> createState() => _ModernGameSetupState();
@@ -36,10 +25,11 @@ class ModernGameSetup extends StatefulWidget {
 
 class _ModernGameSetupState extends State<ModernGameSetup> {
   final List<int> _playerOptions = [3, 4, 5, 6];
-  bool _isExpanded = true;
+  // Change to RxBool for reactive behavior
+  final RxBool _isExpanded = true.obs;
   late final TextEditingController _pointsController;
 
-  // Deep blueish gradient colors
+  // --- REVERTED COLOR CONSTANTS TO ORIGINAL GRADIENT THEME ---
   static const Color _primaryDark = Color(0xFF1E3A8A);
   static const Color _primaryMedium = Color(0xFF2563EB);
   static const Color _primaryLight = Color(0xFF3B82F6);
@@ -52,43 +42,71 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
   static const Color _iosBorder = Color(0xFFD1D5DB);
   static const Color _iosBackground = Color(0xFFF9FAFB);
 
+  // --- RESTORED GRADIENT ---
   static const LinearGradient _blueGradient = LinearGradient(colors: [_primaryDark, _primaryMedium, _primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight);
 
   @override
   void initState() {
     super.initState();
-    int initialPoints = (widget.pointsPerRupee > 0 ? widget.pointsPerRupee.round() : 1);
-    _pointsController = TextEditingController(text: initialPoints.toString());
+    // Use the actual point value, not just the rounded one for initial display
+    _pointsController = TextEditingController(text: widget.pointsPerRupee.toStringAsFixed(0));
+
+    // Initialize the expanded state based on whether players are already selected
+    if (widget.selectedPlayersList.length >= widget.selectedPlayers) {
+      _isExpanded.value = false;
+    }
   }
 
   @override
   void didUpdateWidget(covariant ModernGameSetup oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // Use Obx reactive approach to handle player selection completion
+    _handlePlayerSelectionCompletion();
+
+    // 2. Point Controller Update Logic
     if (oldWidget.pointsPerRupee != widget.pointsPerRupee) {
-      int newPoints = (widget.pointsPerRupee > 0 ? widget.pointsPerRupee.round() : 1);
-      _pointsController.text = newPoints.toString();
+      String newPointsText = widget.pointsPerRupee.toStringAsFixed(0);
+      if (_pointsController.text != newPointsText) {
+        _pointsController.text = newPointsText;
+      }
+    }
+  }
+
+  // Reactive method to handle player selection completion
+  void _handlePlayerSelectionCompletion() {
+    final bool isComplete = widget.selectedPlayersList.length >= widget.selectedPlayers;
+
+    // Automatically collapse when all players are selected
+    if (isComplete && _isExpanded.value) {
+      _isExpanded.value = false;
     }
   }
 
   @override
   void dispose() {
     _pointsController.dispose();
+    _isExpanded.close(); // Important: close the Rx variable
     super.dispose();
   }
 
-  // 🔄 UPDATED: Directly calls the new onPlayersConfirmed prop with the list
-  void _selectPlayers() {
-    showDialog(
-      context: context,
-      builder: (context) => PlayerSelectionDialog(
-        numberOfPlayers: widget.selectedPlayers,
-        // Passing the list of already selected player IDs (usernames)
-        alreadySelectedPlayers: widget.selectedPlayersList.map((p) => p.userId).toList(),
+  // --- RETAINED FUNCTIONAL FIX FOR DIALOG ---
+  void _selectPlayers() async {
+    final List<String> currentSelectedIds = widget.selectedPlayersList.map((p) => p.userName).toList();
 
-        // 🔥 Pass the new, list-accepting callback directly 🔥
-        onPlayersConfirmed: widget.onPlayersConfirmed,
-      ),
+    // 1. Await the result from the dialog
+    final List<User>? confirmedUsers = await showDialog<List<User>>(
+      context: context,
+      builder: (context) => PlayerSelectionDialog(numberOfPlayers: widget.selectedPlayers, alreadySelectedPlayers: currentSelectedIds),
     );
+
+    // 2. Check the result and pass it up to the parent widget (MarriageScreen)
+    if (confirmedUsers != null && confirmedUsers.isNotEmpty) {
+      widget.onPlayersConfirmed(confirmedUsers);
+
+      // Immediately check if we should collapse after player selection
+      _handlePlayerSelectionCompletion();
+    }
   }
 
   void _confirmPlayerChange(int newCount) {
@@ -97,16 +115,12 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
     showCupertinoDialog(
       context: context,
       builder: (context) => CupertinoAlertDialog(
-        // 🔥 Title: Simple and Bold (Uses black color, as CupertinoAlertDialog's default title text is black) 🔥
-        title: Text(
-          'Change Player Number',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        // 🔥 Content: Simple question, with text color explicitly set to black (Cupertino default) 🔥
-        content: Text('Are You Sure Want To Change The Players Number?', style: GoogleFonts.inter(color: Colors.white)),
+        // REVERTED TEXT COLOR TO BE WHITE/DEFAULT TO MATCH ORIGINAL INFERRED INTENT (using the original logic's color settings)
+        title: Text('Change Player Number', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        content: Text('Are You Sure Want To Change The Players Number? This will reset the current player selection.', style: GoogleFonts.inter()),
         actions: <CupertinoDialogAction>[
           CupertinoDialogAction(
-            child: Text('Cancel', style: GoogleFonts.inter(color: CupertinoColors.systemGrey5)),
+            child: Text('Cancel', style: GoogleFonts.inter(color: CupertinoColors.systemGrey)),
             onPressed: () => Navigator.pop(context),
           ),
           CupertinoDialogAction(
@@ -114,6 +128,8 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
             child: Text('Change', style: GoogleFonts.inter(color: CupertinoColors.systemRed)),
             onPressed: () {
               widget.onPlayersChanged(newCount);
+              // Expand the section when player count changes to allow new selection
+              _isExpanded.value = true;
               Navigator.pop(context);
             },
           ),
@@ -122,16 +138,18 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
     );
   }
 
+  // --- RESTORED ORIGINAL HEADER WITH GRADIENT AND SIMPLER BADGE DISPLAY ---
   Widget _buildHeader() {
-    String pointsValue = widget.pointsPerRupee.round().toString();
-    // Use the max number of players for the display
+    // Use the maximum number of players for the display (Original UI intent)
     String maxPlayers = widget.selectedPlayers.toString();
+    String pointsValue = widget.pointsPerRupee.toStringAsFixed(0);
 
     return GestureDetector(
-      onTap: () => setState(() => _isExpanded = !_isExpanded),
+      onTap: () => setState(() => _isExpanded.value = !_isExpanded.value),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
+          // RESTORED GRADIENT
           gradient: _blueGradient,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: _primaryDark.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
@@ -154,7 +172,7 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                     style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                   const SizedBox(height: 4),
-                  // Progress Badge: [Total Players] | [Points Value]
+                  // Progress Badge: [Max Players] | [Points Value] (Original format)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -165,14 +183,14 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // 🔥 CHANGE 4: Display only Total Players 🔥
+                        // RESTORED: Only Max Players count is shown
                         Text(
                           maxPlayers,
                           style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
                         ),
                         // Separator '|'
                         Container(height: 12, width: 1, margin: const EdgeInsets.symmetric(horizontal: 6), color: Colors.white.withOpacity(0.5)),
-                        // POINTS VALUE (Uniform styling)
+                        // POINTS VALUE
                         Text(
                           pointsValue,
                           style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
@@ -183,10 +201,12 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-              child: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.white, size: 20),
+            Obx(
+              () => Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                child: Icon(_isExpanded.value ? Icons.expand_less : Icons.expand_more, color: Colors.white, size: 20),
+              ),
             ),
           ],
         ),
@@ -194,6 +214,7 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
     );
   }
 
+  // --- RESTORED ORIGINAL PLAYER SELECTION WIDGET (Segmented Control look) ---
   Widget _buildPlayerSelection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -226,6 +247,7 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
             ),
           ),
           const SizedBox(height: 12),
+          // Segmented Control container
           Container(
             height: 42,
             decoration: BoxDecoration(
@@ -246,6 +268,7 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
+                          // RESTORED GRADIENT AND STYLING
                           gradient: isSelected ? _blueGradient : null,
                           color: isSelected ? null : Colors.white,
                           borderRadius: BorderRadius.circular(8),
@@ -270,8 +293,10 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
     );
   }
 
+  // --- RESTORED ORIGINAL COMBINED ACTIONS WIDGET (iOS-like styling) ---
   Widget _buildCombinedActions() {
-    String currentPoints = widget.pointsPerRupee > 0 ? widget.pointsPerRupee.round().toString() : '1';
+    String currentPoints = widget.pointsPerRupee.toStringAsFixed(0);
+    // Logic for button state
     bool canSelectMorePlayers = widget.selectedPlayersList.length < widget.selectedPlayers;
 
     return Container(
@@ -322,13 +347,12 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Points Input Section - Now Flexible
+                // 1. Points Input Section
                 Flexible(
-                  // Use Flexible to allow shrinking on small screens
                   flex: 3,
                   child: Container(
-                    constraints: const BoxConstraints(minWidth: 85, maxWidth: 120), // Added constraints for better control
-                    height: 36,
+                    constraints: const BoxConstraints(minWidth: 85, maxWidth: 120),
+                    height: 36, // Original smaller height
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -340,24 +364,23 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                       child: Center(
                         child: TextField(
                           controller: _pointsController,
-                          textAlign: TextAlign.center,
+                          textAlign: TextAlign.center, // Original alignment
                           keyboardType: TextInputType.number,
                           style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: _primaryDark),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             prefixText: 'POINT | ',
-                            prefixStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: _textGrey),
+                            prefixStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: _textGrey),
                             border: InputBorder.none,
                             isDense: true,
-                            contentPadding: EdgeInsets.only(bottom: 2),
+                            contentPadding: const EdgeInsets.only(bottom: 2),
                             hintText: '1',
-                            hintStyle: TextStyle(color: Color(0xFFD1D5DB)),
+                            hintStyle: GoogleFonts.inter(color: const Color(0xFFD1D5DB)),
                           ),
                           onChanged: (value) {
                             int? parsedValue = int.tryParse(value);
                             if (parsedValue != null && parsedValue > 0) {
                               widget.onPointsChanged(parsedValue.toDouble());
                             }
-                            setState(() {});
                           },
                           onTapOutside: (event) {
                             FocusManager.instance.primaryFocus?.unfocus();
@@ -369,7 +392,6 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
                               _pointsController.text = finalValue.toString();
                             }
                             widget.onPointsChanged(finalValue.toDouble());
-                            setState(() {});
                           },
                         ),
                       ),
@@ -379,14 +401,14 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
 
                 const SizedBox(width: 10),
 
-                // 2. Select Players Button - Uses Expanded to fill remaining space
+                // 2. Select Players Button - RESTORED ORIGINAL APPEARANCE
                 Expanded(
                   flex: 5,
                   child: Container(
-                    height: 36,
+                    height: 36, // Original smaller height
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      // Button is disabled/grayed out if the maximum number of players is already selected
+                      // RESTORED GRADIENT AND DISABLED STATE LOGIC
                       gradient: canSelectMorePlayers ? _blueGradient : const LinearGradient(colors: [Color(0xFF9CA3AF), Color(0xFF6B7280)]),
                       boxShadow: [BoxShadow(color: (canSelectMorePlayers ? _primaryLight : const Color(0xFF6B7280)).withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))],
                     ),
@@ -422,17 +444,13 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
 
   @override
   Widget build(BuildContext context) {
-    // Use LayoutBuilder for better local responsiveness checks
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
-
-        // Dynamic horizontal margin based on screen width
         final dynamicMargin = screenWidth > 600 ? 32.0 : 16.0;
 
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          // Apply dynamic margin
           margin: EdgeInsets.symmetric(horizontal: dynamicMargin, vertical: 16),
           decoration: BoxDecoration(
             color: _lightGrey,
@@ -443,19 +461,15 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildHeader(),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                child: Column(
-                  children: [
-                    if (_isExpanded) ...[
-                      const SizedBox(height: 16),
-                      // Inner padding now uses the standard dynamic value
-                      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: _buildPlayerSelection()),
-                      const SizedBox(height: 12),
-                      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: _buildCombinedActions()),
-                      const SizedBox(height: 16),
+              Obx(
+                () => AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  child: Column(
+                    children: [
+                      // The _isExpanded check controls the visibility of the setup controls
+                      if (_isExpanded.value) ...[const SizedBox(height: 16), Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: _buildPlayerSelection()), const SizedBox(height: 12), Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: _buildCombinedActions()), const SizedBox(height: 16)],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ],

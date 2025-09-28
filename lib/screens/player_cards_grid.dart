@@ -1,16 +1,18 @@
-// widgets/player_cards_grid.dart
+// widgets/player_cards_grid.dart (Final Fix for Confirmation Flicker and Signature Update)
+
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Assuming these models/widgets exist (MUST exist)
+import '../controllers/player_controller.dart';
 import '../model/marriage_game.dart';
-import '../model/user_model.dart';
-import '../widgets/player_selection_dialog.dart' hide User;
+import '../model/user_model.dart' as PlayerDialog;
+import '../widgets/player_selection_dialog.dart' as PlayerDialog;
 
-// --- Custom Colors and Styles ---
+// --- Custom Colors and Styles (REMAINS UNCHANGED) ---
 const Color _primaryDark = Color(0xFF1E3A8A);
 const Color _primaryMedium = Color(0xFF2563EB);
 const Color _primaryLight = Color(0xFF3B82F6);
@@ -21,109 +23,129 @@ const Color _iosBorder = Color(0xFFD1D5DB);
 const Color _iosBackground = Color(0xFFF9FAFB);
 const Color _doubleeColor = Color(0xFF06B6D4);
 const Color _softGreen = Color(0xFF34D399);
+const Color _darkText = Color(0xFF1A1D2B); // Changed to match common dark text
 const LinearGradient _blueGradient = LinearGradient(colors: [_primaryDark, _primaryMedium, _primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight);
 const LinearGradient _seenGradient = LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)], begin: Alignment.topLeft, end: Alignment.bottomRight);
 const LinearGradient _winGradient = LinearGradient(colors: [Color(0xFF10B981), Color(0xFF34D399)], begin: Alignment.topLeft, end: Alignment.bottomRight);
 
 class PlayerCardsGrid extends StatefulWidget {
-  final List<MarriagePlayer> players;
-  final Function(int, double) onPointsChanged;
-  final Function(int) onDoubleeToggle;
+  // ✅ FIX: Changed signatures to use String (player identifier) instead of int (index)
+  final Function(String, double) onPointsChanged;
+  final Function(String) onDoubleeToggle;
   final VoidCallback? onActionButtonPressed;
-  // Function to handle the player swap/update in the parent component
-  final Function(List<User> newPlayers)? onPlayersSwapped;
 
-  const PlayerCardsGrid({super.key, required this.players, required this.onPointsChanged, required this.onDoubleeToggle, this.onActionButtonPressed, this.onPlayersSwapped});
+  const PlayerCardsGrid({super.key, required this.onPointsChanged, required this.onDoubleeToggle, this.onActionButtonPressed});
 
   @override
   State<PlayerCardsGrid> createState() => _PlayerCardsGridState();
 }
 
 class _PlayerCardsGridState extends State<PlayerCardsGrid> {
+  final PlayerController _playerController = Get.find<PlayerController>();
   final List<Map<String, dynamic>> _playerStates = [];
+  late Worker _playerListListener;
+  bool _hasAttemptedInitialLoad = false;
+
+  // 🔥 Flag to prevent the empty state flicker after successful dialog close
+  bool _justConfirmedPlayers = false;
 
   @override
   void initState() {
     super.initState();
-    _initializePlayerStates();
+
+    _initializePlayerStates(_playerController.players.length);
+
+    _playerListListener = ever(_playerController.players, (_) {
+      setState(() {
+        final newCount = _playerController.players.length;
+        debugPrint('PlayerCardsGrid: Listener triggered. Resetting local _playerStates to count: $newCount');
+
+        // Reset the flag only when the Obx fires, indicating the players list has updated
+        _justConfirmedPlayers = false;
+
+        // Reset local state (status/points) when the player list changes
+        _playerStates.clear();
+        for (int i = 0; i < newCount; i++) {
+          _playerStates.add({'status': 'Blind', 'points': 0.0});
+        }
+      });
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkInitialPlayers();
+    });
   }
 
-  void _initializePlayerStates() {
-    _playerStates.clear();
-    for (int i = 0; i < widget.players.length; i++) {
-      _playerStates.add({'status': 'Blind', 'points': 0.0});
+  void _initializePlayerStates(int playerCount) {
+    if (_playerStates.isEmpty) {
+      debugPrint('PlayerCardsGrid: Initializing local _playerStates with count: $playerCount');
+      _playerStates.clear();
+      for (int i = 0; i < playerCount; i++) {
+        _playerStates.add({'status': 'Blind', 'points': 0.0});
+      }
+    }
+  }
+
+  void _checkInitialPlayers() {
+    if (!_hasAttemptedInitialLoad && _playerController.players.isEmpty) {
+      _hasAttemptedInitialLoad = true;
+      debugPrint('PlayerCardsGrid: Initial player list is empty. Prompting user to select players.');
     }
   }
 
   @override
-  void didUpdateWidget(PlayerCardsGrid oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Re-initialize internal state if the players list size or identity changes
-    if (oldWidget.players.length != widget.players.length || oldWidget.players.map((p) => p.userName).join() != widget.players.map((p) => p.userName).join()) {
-      _initializePlayerStates();
-    }
+  void dispose() {
+    _playerListListener.dispose();
+    super.dispose();
   }
 
-  // 🔥 FIXED: Simplified dialog handling for proper UI updates
-  // Inside _PlayerCardsGridState class
-
-  // ... (existing code up to _showPlayerSelectionDialog)
-
+  // Method to open the player selection dialog
   void _showPlayerSelectionDialog(BuildContext context) async {
-    // Assuming 'widget.players' is the list of players passed to the current Widget.
-    final List<String> currentSelectedNames = widget.players.map((p) => p.userName).toList();
-    final int requiredPlayerCount = widget.players.length;
+    final List<MarriagePlayer> currentPlayers = _playerController.players.toList();
 
-    print('LOG 1: Opening Player Selection Dialog. Required: $requiredPlayerCount. Current: ${currentSelectedNames.length}'); // NEW LOG
+    // Use the *target* number of players set in ModernGameSetup. Since we don't have that
+    // property here, we'll use the current list length (if non-empty) or default to 4.
+    // This logic relies on the parent component (`MarriageScreen` via `ModernGameSetup`)
+    // setting the player count in the PlayerController first.
+    final int requiredPlayerCount = currentPlayers.isNotEmpty ? currentPlayers.length : 4;
 
-    // Show dialog and wait for result
-    final List<User>? result = await showDialog<List<User>>(
+    // Use the player's userId/userName as the stable identifier
+    final List<String> currentSelectedNames = currentPlayers.map((p) => p.userName).toList();
+
+    final List<PlayerDialog.User>? result = await showDialog<List<PlayerDialog.User>>(
       context: context,
       barrierDismissible: true,
-      builder: (context) {
-        return PlayerSelectionDialog(
+      builder: (dialogContext) {
+        return PlayerDialog.PlayerSelectionDialog(
           numberOfPlayers: requiredPlayerCount,
           alreadySelectedPlayers: currentSelectedNames,
-          // The callback is left empty to avoid double-popping.
-          onPlayersConfirmed: (List<User> finalSelection) {},
+          // ❌ FIX: Removed the redundant 'onPlayersConfirmed' callback here.
+          // The result is returned via Navigator.pop/Get.back.
+          // onPlayersConfirmed: (List<PlayerDialog.User> finalSelection) { ... }
         );
       },
     );
 
-    print('LOG 2: Dialog returned. Result is null: ${result == null}.'); // NEW LOG
-
-    // If we got a valid result (users confirmed their selection), update the parent and local state
+    // 🔥 FIX: Set the flag on successful confirmation and update the controller.
     if (result != null && result.isNotEmpty) {
-      print('LOG 3: Successfully received ${result.length} players. Player 1 Name: ${result.first.username}'); // NEW LOG
+      // 1. Update the controller with the confirmed user list
+      _playerController.updatePlayersFromUsers(result);
 
-      // 1. Call the callback function to update the list in the GRANDPARENT widget
-      if (widget.onPlayersSwapped != null) {
-        // This MUST trigger a setState in the parent!
-        widget.onPlayersSwapped!(result);
-        print('LOG 5: widget.onPlayersSwapped (Parent/Grandparent callback) called.'); // NEW LOG
-      }
-
-      // 🔥 CRITICAL FIX: Add a local setState to force PlayerCardsGrid to rebuild
-      // This schedules a rebuild on the next frame, which then triggers didUpdateWidget()
-      // to correctly reset _playerStates based on the new widget.players list received from the parent.
+      // 2. Set flag immediately to bypass empty state check in the next build
       setState(() {
-        print('LOG 4: Local setState called in PlayerCardsGrid to trigger rebuild.');
+        _justConfirmedPlayers = true;
       });
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Players updated successfully!'), duration: Duration(milliseconds: 1500), backgroundColor: Colors.green));
-    } else {
-      print('LOG 6: Result was null or empty. Selection cancelled.'); // NEW LOG
-      // Dialog was dismissed without confirmation
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Player selection cancelled'), duration: Duration(milliseconds: 1000), backgroundColor: Colors.orange));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Players updated successfully!'), duration: Duration(milliseconds: 1500), backgroundColor: _softGreen));
+    } else if (result == null) {
+      // Only show cancellation snackbar if the list was already populated
+      if (currentPlayers.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Player selection cancelled'), duration: Duration(milliseconds: 1000), backgroundColor: Colors.orange));
+      }
     }
   }
 
-  // ... (rest of the class remains the same)
-
-  // Updated CupertinoAlertDialog
-  void _showDoubleeDialog(int index) {
-    final player = widget.players[index];
+  void _showDoubleeDialog(MarriagePlayer player) {
     final isCurrentlyDoublee = player.isDoublee;
     final actionText = isCurrentlyDoublee ? 'Disable' : 'Enable';
     final confirmationText = isCurrentlyDoublee ? 'Are you sure you want to disable Doublee mode for ${player.userName}?' : 'Are you sure you want to enable Doublee mode for ${player.userName}?';
@@ -137,13 +159,13 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
         ),
         content: Text(
           confirmationText,
-          style: GoogleFonts.poppins(color: Colors.white70, fontWeight: FontWeight.w400, fontSize: 14),
+          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 14),
         ),
         actions: <CupertinoDialogAction>[
           CupertinoDialogAction(
             child: Text(
               'Cancel',
-              style: GoogleFonts.poppins(color: CupertinoColors.lightBackgroundGray, fontWeight: FontWeight.w500),
+              style: GoogleFonts.poppins(color: CupertinoColors.white, fontWeight: FontWeight.w500),
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -154,7 +176,8 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
               style: GoogleFonts.poppins(color: isCurrentlyDoublee ? _doubleeColor : _softGreen, fontWeight: FontWeight.w500),
             ),
             onPressed: () {
-              widget.onDoubleeToggle(index);
+              // ✅ FIX: Use the player's stable identifier (userName)
+              widget.onDoubleeToggle(player.userName);
               Navigator.pop(context);
             },
           ),
@@ -173,113 +196,155 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.players.isEmpty) return const SizedBox();
+    return Obx(() {
+      final players = _playerController.players;
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final contentPadding = screenWidth > 600 ? 24.0 : 16.0;
-
-    return Container(
-      margin: EdgeInsets.all(contentPadding),
-      child: Column(
-        children: [
-          // Section Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
+      // 🔥 FIX: Only show the empty state if the list is empty AND we didn't just confirm a selection.
+      if (players.isEmpty && !_justConfirmedPlayers) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(gradient: _blueGradient, borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.people, color: Colors.white, size: 18),
-                ),
-                const SizedBox(width: 12),
+                Icon(Icons.person_search, size: 60, color: _textGrey.withOpacity(0.5)),
+                const SizedBox(height: 16),
                 Text(
-                  'Current Players',
-                  style: GoogleFonts.inter(fontSize: screenWidth * 0.04, fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B)),
+                  'Please select ${players.isEmpty ? 'players' : players.length} to start the game.',
+                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: _textGrey),
                 ),
-                const Spacer(),
-
-                // Total Count
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _iosBackground,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _borderGrey, width: 1.0),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Total',
-                        style: GoogleFonts.inter(fontSize: screenWidth * 0.03, color: _textGrey, fontWeight: FontWeight.w600),
-                      ),
-                      Container(width: 1.5, height: 14, margin: const EdgeInsets.symmetric(horizontal: 4), color: _borderGrey),
-                      Text(
-                        '${widget.players.length}',
-                        style: GoogleFonts.inter(fontSize: screenWidth * 0.03, color: _textGrey, fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ACTION BUTTON: Swap/Edit Players
-                const SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: _iosBackground,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _borderGrey, width: 1.0),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      // Calls the method that shows player selection dialog
-                      onTap: () => _showPlayerSelectionDialog(context),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: Icon(Icons.swap_horiz, color: _primaryMedium, size: screenWidth * 0.05),
-                      ),
-                    ),
+                const SizedBox(height: 20),
+                // Button to explicitly open the dialog
+                ElevatedButton.icon(
+                  onPressed: () => _showPlayerSelectionDialog(context),
+                  icon: const Icon(Icons.group_add, color: Colors.white),
+                  label: Text('Select Players', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryMedium,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ],
             ),
           ),
+        );
+      }
 
-          SizedBox(height: contentPadding),
+      // --- Grid Content (when players are selected or just confirmed) ---
+      final screenWidth = MediaQuery.of(context).size.width;
+      final contentPadding = screenWidth > 600 ? 24.0 : 16.0;
 
-          // Players Grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: _getCrossAxisCount(widget.players.length), crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: _getChildAspectRatio(widget.players.length)),
-            itemCount: widget.players.length,
-            itemBuilder: (context, index) => _PlayerCard(
-              player: widget.players[index],
-              index: index,
-              status: _playerStates[index]['status'],
-              points: _playerStates[index]['points'],
-              isDoublee: widget.players[index].isDoublee,
-              onStatusChanged: (status) {
-                setState(() {
-                  _playerStates[index]['status'] = status;
-                });
-              },
-              onPointsChanged: (points) {
-                setState(() {
-                  _playerStates[index]['points'] = points;
-                });
-                widget.onPointsChanged(index, points);
-              },
-              onDoubleeToggle: () => _showDoubleeDialog(index),
+      return Container(
+        margin: EdgeInsets.all(contentPadding),
+        child: Column(
+          children: [
+            // Section Header (omitted for brevity, remains unchanged)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(gradient: _blueGradient, borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.people, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Current Players',
+                    style: GoogleFonts.inter(fontSize: screenWidth * 0.04, fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B)),
+                  ),
+                  const Spacer(),
+
+                  // Total Count
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _iosBackground,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _borderGrey, width: 1.0),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Total',
+                          style: GoogleFonts.inter(fontSize: screenWidth * 0.03, color: _textGrey, fontWeight: FontWeight.w600),
+                        ),
+                        Container(width: 1.5, height: 14, margin: const EdgeInsets.symmetric(horizontal: 4), color: _borderGrey),
+                        Text(
+                          '${players.length}',
+                          style: GoogleFonts.inter(fontSize: screenWidth * 0.03, color: _textGrey, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ACTION BUTTON: Swap/Edit Players
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: _iosBackground,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _borderGrey, width: 1.0),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _showPlayerSelectionDialog(context),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: Icon(Icons.swap_horiz, color: _primaryMedium, size: screenWidth * 0.05),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+
+            SizedBox(height: contentPadding),
+
+            // Players Grid
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: _getCrossAxisCount(players.length), crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: _getChildAspectRatio(players.length)),
+              itemCount: players.length,
+              itemBuilder: (context, index) {
+                if (index >= _playerStates.length) return const SizedBox();
+
+                final player = players[index];
+
+                return _PlayerCard(
+                  player: player,
+                  index: index,
+                  status: _playerStates[index]['status'],
+                  points: _playerStates[index]['points'],
+                  isDoublee: player.isDoublee,
+                  onStatusChanged: (status) {
+                    setState(() {
+                      _playerStates[index]['status'] = status;
+                    });
+                  },
+                  onPointsChanged: (points) {
+                    setState(() {
+                      _playerStates[index]['points'] = points;
+                    });
+                    // ✅ FIX: Pass the player's stable identifier (userName)
+                    widget.onPointsChanged(player.userName, points);
+                  },
+                  onDoubleeToggle: () => _showDoubleeDialog(player),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -294,7 +359,7 @@ class _PlayerCard extends StatefulWidget {
   final Function(double) onPointsChanged;
   final VoidCallback onDoubleeToggle;
 
-  const _PlayerCard({required this.player, required this.index, required this.status, required this.points, required this.isDoublee, required this.onStatusChanged, required this.onPointsChanged, required this.onDoubleeToggle});
+  const _PlayerCard({super.key, required this.player, required this.index, required this.status, required this.points, required this.isDoublee, required this.onStatusChanged, required this.onPointsChanged, required this.onDoubleeToggle});
 
   @override
   State<_PlayerCard> createState() => _PlayerCardState();
@@ -312,8 +377,12 @@ class _PlayerCardState extends State<_PlayerCard> {
   @override
   void didUpdateWidget(covariant _PlayerCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.points != widget.points) {
-      _pointsController.text = widget.points == 0.0 ? '' : widget.points.toInt().toString();
+    if (oldWidget.points != widget.points || oldWidget.player.userName != widget.player.userName) {
+      // Only update the text field if the underlying point value has changed.
+      final newPointsText = widget.points == 0.0 ? '' : widget.points.toInt().toString();
+      if (_pointsController.text != newPointsText) {
+        _pointsController.text = newPointsText;
+      }
     }
   }
 
@@ -322,6 +391,8 @@ class _PlayerCardState extends State<_PlayerCard> {
     _pointsController.dispose();
     super.dispose();
   }
+
+  // ... (Rest of _PlayerCardState methods and build function remain unchanged) ...
 
   Color _getStatusColor(String status) {
     switch (status) {
@@ -382,7 +453,7 @@ class _PlayerCardState extends State<_PlayerCard> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final cardRadius = 12.0;
+    const double cardRadius = 12.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -405,11 +476,11 @@ class _PlayerCardState extends State<_PlayerCard> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: _lightGrey,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(cardRadius - 1)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(cardRadius - 1)),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(cardRadius - 1)),
-                    child: widget.player.userImage != null
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(cardRadius - 1)),
+                    child: widget.player.userImage != null && File(widget.player.userImage!).existsSync()
                         ? Image.file(File(widget.player.userImage!), fit: BoxFit.cover, alignment: Alignment.center)
                         : Center(
                             child: Icon(Icons.person_rounded, size: screenWidth * 0.15, color: _primaryDark.withOpacity(0.7)),
@@ -511,7 +582,7 @@ class _PlayerCardState extends State<_PlayerCard> {
                             // Doublee Switch - Pushed to the far right
                             Transform.scale(
                               scale: 0.65,
-                              child: CupertinoSwitch(value: widget.isDoublee, onChanged: (_) => widget.onDoubleeToggle(), activeColor: _doubleeColor, trackColor: _iosBorder, thumbColor: widget.isDoublee ? CupertinoColors.white : _textGrey, key: ValueKey(widget.isDoublee)),
+                              child: CupertinoSwitch(value: widget.isDoublee, onChanged: (_) => widget.onDoubleeToggle(), activeColor: _doubleeColor, trackColor: _iosBorder, thumbColor: widget.isDoublee ? CupertinoColors.white : _textGrey, key: ValueKey('${widget.player.userName}_${widget.isDoublee}')),
                             ),
                           ],
                         ),
@@ -530,9 +601,9 @@ class _PlayerCardState extends State<_PlayerCard> {
               right: 10,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [_doubleeColor, Color(0xFF22D3EE)]),
-                  borderRadius: BorderRadius.circular(12),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: [_doubleeColor, Color(0xFF22D3EE)]),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
                 child: Text(
                   '2x',

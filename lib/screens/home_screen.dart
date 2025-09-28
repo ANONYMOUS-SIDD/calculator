@@ -7,6 +7,7 @@ import 'package:calculators/screens/rules_screen.dart';
 import 'package:calculators/screens/settings_screen.dart';
 import 'package:calculators/screens/users_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart'; // 🚀 ADDED: Import GetX
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 // -----------------------------------------------------------
@@ -285,27 +286,11 @@ class _ModernGridItemWithFeedbackState extends State<_ModernGridItemWithFeedback
 
       final destinationScreen = _getDestinationScreen(widget.gridItem.label, widget.gridItem.color, widget.gridItem.icon);
 
-      // Navigate with Hero and Slide/Fade transition
-      Navigator.of(context).push(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 500),
-          pageBuilder: (context, animation, secondaryAnimation) => destinationScreen,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = Offset(0.0, 1.0); // Page slides up from bottom
-            const end = Offset.zero;
-            const curve = Curves.easeOutCubic; // Smooth, dramatic curve
-
-            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-            return SlideTransition(
-              position: animation.drive(tween),
-              child: FadeTransition(
-                opacity: animation, // Added fade for a smoother entrance
-                child: child,
-              ),
-            );
-          },
-        ),
+      // 🚀 GETX INTEGRATION: Use Get.to() instead of Navigator.push(PageRouteBuilder)
+      Get.to(
+        () => destinationScreen,
+        transition: Transition.cupertino, // Standard slide-up/slide-in transition
+        duration: const Duration(milliseconds: 500),
       );
     });
   }

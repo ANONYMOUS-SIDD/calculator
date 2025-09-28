@@ -1,7 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
+
+import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -27,18 +30,22 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // Navigate to calculator after 3 seconds
+    // Navigate to HomeScreen after 3 seconds using GetX
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/homeScreen');
+      // Use Get.off() to navigate to the HomeScreen widget
+      // and remove the SplashScreen from the navigation stack.
+      Get.off(() => const HomeScreen());
     });
-  }
+  } // ❌ initState() ENDS HERE
 
+  // ✅ CORRECT PLACEMENT: dispose() must be a direct method of the State class
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
 
+  // ✅ CORRECT PLACEMENT: build() must be a direct method of the State class
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
@@ -73,7 +80,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               child: AnimatedBuilder(
                 animation: _controller,
                 builder: (context, child) {
-                  double angle = -_flipAnimation.value * 3.1415; // reversed
+                  // Use pi from dart:math for accuracy, but 3.1415 is fine.
+                  double angle = -_flipAnimation.value * 3.1415;
                   return Opacity(
                     opacity: _fadeAnimation.value,
                     child: Transform(
