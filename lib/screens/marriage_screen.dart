@@ -1,11 +1,13 @@
 import 'package:calculators/controllers/player_controller.dart';
 import 'package:calculators/screens/player_cards_grid.dart';
+import 'package:calculators/screens/results_table.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../model/user_model.dart';
 import '../screens/user_app_bar.dart';
+// Import the ResultsTable widget
 import 'modern_game_setup.dart';
 
 // MarriageScreen is a StatelessWidget that observes the PlayerController.
@@ -40,12 +42,12 @@ class MarriageScreen extends StatelessWidget {
   }
 
   void _calculateGame() {
-    // ⚠️ TODO: Implement the full calculation logic inside the PlayerController
-    Get.snackbar('Game Calculated!', 'Calculation logic should now reside in a Controller.', backgroundColor: const Color(0xFF0066FF), colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+    // FIX 1: Now correctly calling the calculation logic in the PlayerController
+    playerController.calculateGame();
   }
 
   void _newGame() {
-    // ⚠️ TODO: Implement game reset logic in PlayerController (clear history, reset player scores/flags)
+    // Correctly implemented game reset logic
     playerController.resetGame();
   }
 
@@ -96,6 +98,11 @@ class MarriageScreen extends StatelessWidget {
                             )
                           : const SizedBox.shrink(),
                     ),
+
+                    const SizedBox(height: 20),
+
+                    // FIX 2: Add the ResultsTable here so it is part of the screen layout
+                    const ResultsTable(),
 
                     const SizedBox(height: 20),
                   ],
