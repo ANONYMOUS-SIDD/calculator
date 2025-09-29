@@ -487,7 +487,7 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
 
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          margin: EdgeInsets.symmetric(horizontal: dynamicMargin, vertical: 16),
+          margin: EdgeInsets.symmetric(horizontal: dynamicMargin, vertical: 0),
           decoration: BoxDecoration(
             color: _lightGrey,
             borderRadius: BorderRadius.circular(20),

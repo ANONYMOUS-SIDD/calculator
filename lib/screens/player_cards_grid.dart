@@ -1,4 +1,4 @@
-// widgets/player_cards_grid.dart (Final Fix for Confirmation Flicker and Signature Update)
+// widgets/player_cards_grid.dart (Updated with White Themed Dialogs & Color Swaps)
 
 import 'dart:io';
 
@@ -12,7 +12,7 @@ import '../model/marriage_game.dart';
 import '../model/user_model.dart' as PlayerDialog;
 import '../widgets/player_selection_dialog.dart' as PlayerDialog;
 
-// --- Custom Colors and Styles (REMAINS UNCHANGED) ---
+// --- Custom Colors and Styles ---
 const Color _primaryDark = Color(0xFF1E3A8A);
 const Color _primaryMedium = Color(0xFF2563EB);
 const Color _primaryLight = Color(0xFF3B82F6);
@@ -23,13 +23,16 @@ const Color _iosBorder = Color(0xFFD1D5DB);
 const Color _iosBackground = Color(0xFFF9FAFB);
 const Color _doubleeColor = Color(0xFF06B6D4);
 const Color _softGreen = Color(0xFF34D399);
-const Color _darkText = Color(0xFF1A1D2B); // Changed to match common dark text
+const Color _successGreen = Color(0xFF10B981);
+const Color _darkText = Color(0xFF1A1D2B);
+
+// 🔥 CHANGE: Swapped Blind and Seen colors
 const LinearGradient _blueGradient = LinearGradient(colors: [_primaryDark, _primaryMedium, _primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight);
-const LinearGradient _seenGradient = LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)], begin: Alignment.topLeft, end: Alignment.bottomRight);
+const LinearGradient _seenGradient = LinearGradient(colors: [_primaryDark, _primaryMedium, _primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight); // Now uses blue gradient
+const LinearGradient _blindGradient = LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)], begin: Alignment.topLeft, end: Alignment.bottomRight); // Now uses purple gradient
 const LinearGradient _winGradient = LinearGradient(colors: [Color(0xFF10B981), Color(0xFF34D399)], begin: Alignment.topLeft, end: Alignment.bottomRight);
 
 class PlayerCardsGrid extends StatefulWidget {
-  // ✅ FIX: Changed signatures to use String (player identifier) instead of int (index)
   final Function(String, double) onPointsChanged;
   final Function(String) onDoubleeToggle;
   final VoidCallback? onActionButtonPressed;
@@ -42,32 +45,24 @@ class PlayerCardsGrid extends StatefulWidget {
 
 class _PlayerCardsGridState extends State<PlayerCardsGrid> {
   final PlayerController _playerController = Get.find<PlayerController>();
-  final List<Map<String, dynamic>> _playerStates = [];
+  final Map<String, Map<String, dynamic>> _playerStates = {};
   late Worker _playerListListener;
   bool _hasAttemptedInitialLoad = false;
-
-  // 🔥 Flag to prevent the empty state flicker after successful dialog close
   bool _justConfirmedPlayers = false;
+  String? _currentWinnerUserName;
 
   @override
   void initState() {
     super.initState();
 
-    _initializePlayerStates(_playerController.players.length);
+    _initializePlayerStates(_playerController.players);
 
-    _playerListListener = ever(_playerController.players, (_) {
+    _playerListListener = ever(_playerController.players, (List<MarriagePlayer> players) {
       setState(() {
-        final newCount = _playerController.players.length;
-        debugPrint('PlayerCardsGrid: Listener triggered. Resetting local _playerStates to count: $newCount');
-
-        // Reset the flag only when the Obx fires, indicating the players list has updated
+        debugPrint('PlayerCardsGrid: Listener triggered. Resetting local _playerStates');
         _justConfirmedPlayers = false;
-
-        // Reset local state (status/points) when the player list changes
-        _playerStates.clear();
-        for (int i = 0; i < newCount; i++) {
-          _playerStates.add({'status': 'Blind', 'points': 0.0});
-        }
+        _initializePlayerStates(players);
+        _updateCurrentWinner();
       });
     });
 
@@ -76,14 +71,46 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
     });
   }
 
-  void _initializePlayerStates(int playerCount) {
-    if (_playerStates.isEmpty) {
-      debugPrint('PlayerCardsGrid: Initializing local _playerStates with count: $playerCount');
-      _playerStates.clear();
-      for (int i = 0; i < playerCount; i++) {
-        _playerStates.add({'status': 'Blind', 'points': 0.0});
+  void _initializePlayerStates(List<MarriagePlayer> players) {
+    for (final player in players) {
+      if (!_playerStates.containsKey(player.userName)) {
+        _playerStates[player.userName] = {'status': 'Seen', 'points': 0.0};
+        debugPrint('PlayerCardsGrid: Initialized state for ${player.userName}');
       }
     }
+
+    final currentPlayerNames = players.map((p) => p.userName).toSet();
+    _playerStates.removeWhere((userName, _) => !currentPlayerNames.contains(userName));
+
+    _updateCurrentWinner();
+  }
+
+  void _updateCurrentWinner() {
+    final players = _playerController.players;
+    for (final player in players) {
+      final state = _playerStates[player.userName];
+      if (state != null && state['status'] == 'Win') {
+        _currentWinnerUserName = player.userName;
+        return;
+      }
+    }
+    _currentWinnerUserName = null;
+  }
+
+  Map<String, dynamic> _getPlayerState(String userName) {
+    return _playerStates[userName] ?? {'status': 'Seen', 'points': 0.0};
+  }
+
+  void _updatePlayerState(String userName, String status, double points) {
+    setState(() {
+      _playerStates[userName] = {'status': status, 'points': points};
+    });
+  }
+
+  bool _canSetWinner(String currentPlayerUserName) {
+    if (_currentWinnerUserName == null) return true;
+    if (_currentWinnerUserName == currentPlayerUserName) return true;
+    return false;
   }
 
   void _checkInitialPlayers() {
@@ -99,90 +126,155 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
     super.dispose();
   }
 
-  // Method to open the player selection dialog
   void _showPlayerSelectionDialog(BuildContext context) async {
     final List<MarriagePlayer> currentPlayers = _playerController.players.toList();
-
-    // Use the *target* number of players set in ModernGameSetup. Since we don't have that
-    // property here, we'll use the current list length (if non-empty) or default to 4.
-    // This logic relies on the parent component (`MarriageScreen` via `ModernGameSetup`)
-    // setting the player count in the PlayerController first.
     final int requiredPlayerCount = currentPlayers.isNotEmpty ? currentPlayers.length : 4;
-
-    // Use the player's userId/userName as the stable identifier
     final List<String> currentSelectedNames = currentPlayers.map((p) => p.userName).toList();
 
     final List<PlayerDialog.User>? result = await showDialog<List<PlayerDialog.User>>(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
-        return PlayerDialog.PlayerSelectionDialog(
-          numberOfPlayers: requiredPlayerCount,
-          alreadySelectedPlayers: currentSelectedNames,
-          // ❌ FIX: Removed the redundant 'onPlayersConfirmed' callback here.
-          // The result is returned via Navigator.pop/Get.back.
-          // onPlayersConfirmed: (List<PlayerDialog.User> finalSelection) { ... }
-        );
+        return PlayerDialog.PlayerSelectionDialog(numberOfPlayers: requiredPlayerCount, alreadySelectedPlayers: currentSelectedNames);
       },
     );
 
-    // 🔥 FIX: Set the flag on successful confirmation and update the controller.
     if (result != null && result.isNotEmpty) {
-      // 1. Update the controller with the confirmed user list
       _playerController.updatePlayersFromUsers(result);
-
-      // 2. Set flag immediately to bypass empty state check in the next build
       setState(() {
         _justConfirmedPlayers = true;
+        _currentWinnerUserName = null;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Players updated successfully!'), duration: Duration(milliseconds: 1500), backgroundColor: _softGreen));
-    } else if (result == null) {
-      // Only show cancellation snackbar if the list was already populated
-      if (currentPlayers.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Player selection cancelled'), duration: Duration(milliseconds: 1000), backgroundColor: Colors.orange));
-      }
     }
   }
 
-  void _showDoubleeDialog(MarriagePlayer player) {
+  // 🔥 UPDATED: White themed iOS-like dialog
+  // NOTE: This function assumes it is part of a StatefulWidget where 'widget'
+
+  // This function needs the context of a StatefulWidget/StatelessWidget to be defined.
+
+  void _showDoubleeDialog(BuildContext context, MarriagePlayer player) {
     final isCurrentlyDoublee = player.isDoublee;
     final actionText = isCurrentlyDoublee ? 'Disable' : 'Enable';
     final confirmationText = isCurrentlyDoublee ? 'Are you sure you want to disable Doublee mode for ${player.userName}?' : 'Are you sure you want to enable Doublee mode for ${player.userName}?';
 
-    showCupertinoDialog(
+    showDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text(
-          'Doublee Mode',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 18),
-        ),
-        content: Text(
-          confirmationText,
-          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 14),
-        ),
-        actions: <CupertinoDialogAction>[
-          CupertinoDialogAction(
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.poppins(color: CupertinoColors.white, fontWeight: FontWeight.w500),
+      barrierDismissible: true,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          child: Container(
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header Section
+                Container(
+                  width: double.infinity,
+                  // Adjusted padding after removing the icon
+                  padding: const EdgeInsets.only(top: 20, bottom: 20, left: 20, right: 20),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Color(0xFFE5E5EA), width: 0.5)),
+                  ),
+                  child: Column(
+                    children: [
+                      // Title
+                      Text(
+                        "Doublee Mode",
+                        style: GoogleFonts.poppins(
+                          // Changed to Poppins
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1C1C1E),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Subtitle
+                      Text(
+                        confirmationText,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          // Changed to Poppins
+                          fontSize: 15,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF666668),
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Buttons Section
+                Container(
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Color(0xFFE5E5EA), width: 0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      // Cancel Button
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => Navigator.pop(ctx),
+                            borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(14)),
+                            child: Center(
+                              child: Text(
+                                "Cancel",
+                                style: GoogleFonts.poppins(
+                                  // Changed to Poppins
+                                  // Size 15 and weight w500 retained from previous step
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF007AFF),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Vertical Divider
+                      Container(width: 0.5, height: 44, color: const Color(0xFFE5E5EA)),
+                      // Action Button (Enable/Disable)
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              // NOTE: Assumes widget.onDoubleeToggle is available from the StatefulWidget context
+                              widget.onDoubleeToggle(player.userName);
+                            },
+                            borderRadius: const BorderRadius.only(bottomRight: Radius.circular(14)),
+                            child: Center(
+                              child: Text(
+                                actionText,
+                                style: GoogleFonts.poppins(
+                                  // Changed to Poppins
+                                  // Size 15 and weight w500 retained from previous step
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: isCurrentlyDoublee
+                                      ? const Color(0xFFFF3B30) // System Red (Disable)
+                                      : const Color(0xFF34C759), // System Green (Enable)
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            onPressed: () => Navigator.pop(context),
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: isCurrentlyDoublee,
-            child: Text(
-              actionText,
-              style: GoogleFonts.poppins(color: isCurrentlyDoublee ? _doubleeColor : _softGreen, fontWeight: FontWeight.w500),
-            ),
-            onPressed: () {
-              // ✅ FIX: Use the player's stable identifier (userName)
-              widget.onDoubleeToggle(player.userName);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -199,7 +291,6 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
     return Obx(() {
       final players = _playerController.players;
 
-      // 🔥 FIX: Only show the empty state if the list is empty AND we didn't just confirm a selection.
       if (players.isEmpty && !_justConfirmedPlayers) {
         return Center(
           child: Padding(
@@ -214,7 +305,6 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                   style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: _textGrey),
                 ),
                 const SizedBox(height: 20),
-                // Button to explicitly open the dialog
                 ElevatedButton.icon(
                   onPressed: () => _showPlayerSelectionDialog(context),
                   icon: const Icon(Icons.group_add, color: Colors.white),
@@ -232,7 +322,6 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
         );
       }
 
-      // --- Grid Content (when players are selected or just confirmed) ---
       final screenWidth = MediaQuery.of(context).size.width;
       final contentPadding = screenWidth > 600 ? 24.0 : 16.0;
 
@@ -240,7 +329,7 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
         margin: EdgeInsets.all(contentPadding),
         child: Column(
           children: [
-            // Section Header (omitted for brevity, remains unchanged)
+            // Section Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Row(
@@ -257,8 +346,6 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                     style: GoogleFonts.inter(fontSize: screenWidth * 0.04, fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B)),
                   ),
                   const Spacer(),
-
-                  // Total Count
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -281,8 +368,6 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                       ],
                     ),
                   ),
-
-                  // ACTION BUTTON: Swap/Edit Players
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
@@ -305,7 +390,6 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                 ],
               ),
             ),
-
             SizedBox(height: contentPadding),
 
             // Players Grid
@@ -315,29 +399,49 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: _getCrossAxisCount(players.length), crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: _getChildAspectRatio(players.length)),
               itemCount: players.length,
               itemBuilder: (context, index) {
-                if (index >= _playerStates.length) return const SizedBox();
-
                 final player = players[index];
+                final playerState = _getPlayerState(player.userName);
+                final isBlind = playerState['status'] == 'Blind';
 
                 return _PlayerCard(
                   player: player,
                   index: index,
-                  status: _playerStates[index]['status'],
-                  points: _playerStates[index]['points'],
+                  status: playerState['status'],
+                  points: playerState['points'],
                   isDoublee: player.isDoublee,
+                  isInputEnabled: !isBlind,
+                  // 🔥 NEW: Disable doublee toggle for blind users
+                  isDoubleeEnabled: !isBlind,
+                  currentWinnerUserName: _currentWinnerUserName,
                   onStatusChanged: (status) {
-                    setState(() {
-                      _playerStates[index]['status'] = status;
-                    });
+                    // Check if winner already exists
+                    if (status == 'Win' && !_canSetWinner(player.userName)) {
+                      return;
+                    }
+
+                    final oldStatus = playerState['status'];
+                    double newPoints = playerState['points'];
+
+                    // Reset points to 0 when switching to Blind
+                    if (status == 'Blind') {
+                      newPoints = 0.0;
+                      widget.onPointsChanged(player.userName, 0.0);
+                    }
+
+                    _updatePlayerState(player.userName, status, newPoints);
+
+                    // Update current winner tracking
+                    if (status == 'Win') {
+                      _currentWinnerUserName = player.userName;
+                    } else if (oldStatus == 'Win') {
+                      _currentWinnerUserName = null;
+                    }
                   },
                   onPointsChanged: (points) {
-                    setState(() {
-                      _playerStates[index]['points'] = points;
-                    });
-                    // ✅ FIX: Pass the player's stable identifier (userName)
+                    _updatePlayerState(player.userName, playerState['status'], points);
                     widget.onPointsChanged(player.userName, points);
                   },
-                  onDoubleeToggle: () => _showDoubleeDialog(player),
+                  onDoubleeToggle: () => _showDoubleeDialog(context, player),
                 );
               },
             ),
@@ -348,18 +452,20 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
   }
 }
 
-// Player Card Widget
 class _PlayerCard extends StatefulWidget {
   final MarriagePlayer player;
   final int index;
   final String status;
   final double points;
   final bool isDoublee;
+  final bool isInputEnabled;
+  final bool isDoubleeEnabled; // 🔥 NEW: Control doublee switch enable/disable
+  final String? currentWinnerUserName;
   final Function(String) onStatusChanged;
   final Function(double) onPointsChanged;
   final VoidCallback onDoubleeToggle;
 
-  const _PlayerCard({super.key, required this.player, required this.index, required this.status, required this.points, required this.isDoublee, required this.onStatusChanged, required this.onPointsChanged, required this.onDoubleeToggle});
+  const _PlayerCard({super.key, required this.player, required this.index, required this.status, required this.points, required this.isDoublee, required this.isInputEnabled, required this.isDoubleeEnabled, required this.currentWinnerUserName, required this.onStatusChanged, required this.onPointsChanged, required this.onDoubleeToggle});
 
   @override
   State<_PlayerCard> createState() => _PlayerCardState();
@@ -367,42 +473,49 @@ class _PlayerCard extends StatefulWidget {
 
 class _PlayerCardState extends State<_PlayerCard> {
   late TextEditingController _pointsController;
+  late FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
     _pointsController = TextEditingController(text: widget.points == 0.0 ? '' : widget.points.toInt().toString());
+    _focusNode = FocusNode();
   }
 
   @override
   void didUpdateWidget(covariant _PlayerCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // Update points controller when points change
     if (oldWidget.points != widget.points || oldWidget.player.userName != widget.player.userName) {
-      // Only update the text field if the underlying point value has changed.
       final newPointsText = widget.points == 0.0 ? '' : widget.points.toInt().toString();
       if (_pointsController.text != newPointsText) {
         _pointsController.text = newPointsText;
       }
     }
+
+    // Remove focus when input is disabled
+    if (oldWidget.isInputEnabled && !widget.isInputEnabled) {
+      _focusNode.unfocus();
+    }
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _pointsController.dispose();
     super.dispose();
   }
 
-  // ... (Rest of _PlayerCardState methods and build function remain unchanged) ...
-
   Color _getStatusColor(String status) {
     switch (status) {
       case 'Win':
-        return const Color(0xFF10B981);
+        return _successGreen;
       case 'Seen':
-        return const Color(0xFF8B5CF6);
+        return _primaryLight; // 🔥 CHANGE: Seen now uses blue color
       case 'Blind':
       default:
-        return _primaryLight;
+        return const Color(0xFF8B5CF6); // 🔥 CHANGE: Blind now uses purple color
     }
   }
 
@@ -411,14 +524,17 @@ class _PlayerCardState extends State<_PlayerCard> {
     final screenWidth = MediaQuery.of(context).size.width;
     final fontSize = screenWidth * 0.023;
 
+    // Disable Win option if another player is already winner
+    final isWinDisabled = option == 'Win' && widget.currentWinnerUserName != null && widget.currentWinnerUserName != widget.player.userName;
+
     LinearGradient? gradient;
     if (isSelected) {
       if (option == 'Win') {
         gradient = _winGradient;
       } else if (option == 'Seen') {
-        gradient = _seenGradient;
+        gradient = _seenGradient; // 🔥 CHANGE: Seen uses blue gradient
       } else if (option == 'Blind') {
-        gradient = _blueGradient;
+        gradient = _blindGradient; // 🔥 CHANGE: Blind uses purple gradient
       }
     }
 
@@ -426,22 +542,22 @@ class _PlayerCardState extends State<_PlayerCard> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => widget.onStatusChanged(option),
+          onTap: isWinDisabled ? null : () => widget.onStatusChanged(option),
           borderRadius: BorderRadius.circular(4),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.all(1.5),
             decoration: BoxDecoration(
               gradient: gradient,
-              color: isSelected ? null : Colors.white,
+              color: isSelected ? null : (isWinDisabled ? _lightGrey : Colors.white),
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: isSelected ? Colors.transparent : _iosBorder, width: 1.0),
+              border: Border.all(color: isSelected ? Colors.transparent : (isWinDisabled ? _borderGrey : _iosBorder), width: 1.0),
               boxShadow: isSelected ? [BoxShadow(color: _getStatusColor(option).withOpacity(0.3), blurRadius: 3, offset: const Offset(0, 2))] : null,
             ),
             child: Center(
               child: Text(
                 option,
-                style: GoogleFonts.inter(fontSize: fontSize < 9.0 ? 9.0 : fontSize, fontWeight: FontWeight.w700, color: isSelected ? Colors.white : const Color(0xFF374151)),
+                style: GoogleFonts.inter(fontSize: fontSize < 9.0 ? 9.0 : fontSize, fontWeight: FontWeight.w700, color: isSelected ? Colors.white : (isWinDisabled ? _textGrey.withOpacity(0.5) : const Color(0xFF374151))),
               ),
             ),
           ),
@@ -470,7 +586,6 @@ class _PlayerCardState extends State<_PlayerCard> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Profile Photo Section
               Flexible(
                 flex: 1,
                 child: Container(
@@ -488,8 +603,6 @@ class _PlayerCardState extends State<_PlayerCard> {
                   ),
                 ),
               ),
-
-              // Content Area
               Flexible(
                 flex: 1,
                 child: Padding(
@@ -497,7 +610,6 @@ class _PlayerCardState extends State<_PlayerCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 2. User Name
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                         margin: const EdgeInsets.only(bottom: 6),
@@ -523,8 +635,6 @@ class _PlayerCardState extends State<_PlayerCard> {
                           ],
                         ),
                       ),
-
-                      // 3. Status Selector
                       Container(
                         height: 32,
                         padding: const EdgeInsets.all(1.5),
@@ -535,56 +645,66 @@ class _PlayerCardState extends State<_PlayerCard> {
                         ),
                         child: Row(children: ['Blind', 'Seen', 'Win'].map((option) => _buildStatusOption(context, option)).toList()),
                       ),
-
                       const SizedBox(height: 5),
-
-                      // 4 & 5. Points Input and Doublee Switch
-                      Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: _iosBorder, width: 1),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 2, offset: const Offset(0, 1))],
-                        ),
-                        child: Row(
-                          children: [
-                            // Points Input
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.monetization_on_outlined, size: 16, color: _textGrey),
-                                  Container(height: 20, width: 1, margin: const EdgeInsets.symmetric(horizontal: 6), color: _borderGrey),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _pointsController,
-                                      textAlign: TextAlign.right,
-                                      keyboardType: TextInputType.number,
-                                      style: GoogleFonts.inter(fontSize: screenWidth * 0.03, fontWeight: FontWeight.w600, color: _primaryDark),
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.zero,
-                                        hintText: '0',
-                                        hintStyle: TextStyle(color: Color(0xFFCCCCCC)),
+                      GestureDetector(
+                        onTap: widget.isInputEnabled
+                            ? () {
+                                FocusScope.of(context).requestFocus(_focusNode);
+                              }
+                            : null,
+                        child: Container(
+                          height: 36,
+                          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: widget.isInputEnabled ? Colors.white : _lightGrey,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: widget.isInputEnabled ? _iosBorder : _borderGrey, width: 1),
+                            boxShadow: widget.isInputEnabled ? [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 2, offset: const Offset(0, 1))] : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.monetization_on_outlined, size: 16, color: widget.isInputEnabled ? _textGrey : _textGrey.withOpacity(0.4)),
+                                    Container(height: 20, width: 1, margin: const EdgeInsets.symmetric(horizontal: 6), color: widget.isInputEnabled ? _borderGrey : _borderGrey.withOpacity(0.4)),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _pointsController,
+                                        focusNode: _focusNode,
+                                        enabled: widget.isInputEnabled,
+                                        textAlign: TextAlign.right,
+                                        keyboardType: TextInputType.number,
+                                        style: GoogleFonts.inter(fontSize: screenWidth * 0.03, fontWeight: FontWeight.w600, color: widget.isInputEnabled ? _primaryDark : _textGrey.withOpacity(0.4)),
+                                        decoration: const InputDecoration(
+                                          border: InputBorder.none,
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                          hintText: '0',
+                                          hintStyle: TextStyle(color: Color(0xFFCCCCCC)),
+                                        ),
+                                        onChanged: (value) {
+                                          widget.onPointsChanged(int.tryParse(value)?.toDouble() ?? 0.0);
+                                        },
                                       ),
-                                      onChanged: (value) {
-                                        widget.onPointsChanged(int.tryParse(value)?.toDouble() ?? 0.0);
-                                      },
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-
-                            const SizedBox(width: 8), // Spacer to push switch to right
-                            // Doublee Switch - Pushed to the far right
-                            Transform.scale(
-                              scale: 0.65,
-                              child: CupertinoSwitch(value: widget.isDoublee, onChanged: (_) => widget.onDoubleeToggle(), activeColor: _doubleeColor, trackColor: _iosBorder, thumbColor: widget.isDoublee ? CupertinoColors.white : _textGrey, key: ValueKey('${widget.player.userName}_${widget.isDoublee}')),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              Transform.scale(
+                                scale: 0.65,
+                                child: CupertinoSwitch(
+                                  value: widget.isDoublee,
+                                  onChanged: widget.isDoubleeEnabled ? (_) => widget.onDoubleeToggle() : null, // 🔥 CHANGE: Disabled for blind
+                                  activeColor: _doubleeColor,
+                                  trackColor: _iosBorder,
+                                  thumbColor: widget.isDoublee ? CupertinoColors.white : _textGrey,
+                                  key: ValueKey('${widget.player.userName}_${widget.isDoublee}'),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -593,9 +713,7 @@ class _PlayerCardState extends State<_PlayerCard> {
               ),
             ],
           ),
-
-          // Doublee Badge
-          if (widget.isDoublee)
+          if (widget.isDoublee && widget.isDoubleeEnabled) // 🔥 CHANGE: Only show doublee badge if enabled
             Positioned(
               top: 10,
               right: 10,
