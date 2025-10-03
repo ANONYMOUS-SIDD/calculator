@@ -63,6 +63,8 @@ class MarriageScreen extends StatelessWidget {
           children: [
             const UserAppBar(title: "Marriage"),
 
+            // Small gap below app bar
+            // const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -99,12 +101,12 @@ class MarriageScreen extends StatelessWidget {
                           : const SizedBox.shrink(),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     // FIX 2: Add the ResultsTable here so it is part of the screen layout
                     const ResultsTable(),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -114,40 +116,75 @@ class MarriageScreen extends StatelessWidget {
             Obx(
               () => playerController.players.isNotEmpty
                   ? Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -2))],
+                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(18), topRight: Radius.circular(18)),
+                        boxShadow: [BoxShadow(color: Colors.purple.withOpacity(0.15), blurRadius: 20, spreadRadius: 2, offset: const Offset(0, -6))],
+                        gradient: LinearGradient(colors: [Colors.white, Colors.purple.shade50], begin: Alignment.topCenter, end: Alignment.bottomCenter),
                       ),
                       child: Row(
                         children: [
+                          // NEW GAME Button - Pink & Purple Gradient
                           Expanded(
-                            child: OutlinedButton(
-                              onPressed: _newGame,
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                side: const BorderSide(color: Color(0xFF0066FF)),
+                            child: Container(
+                              height: 42,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                gradient: const LinearGradient(colors: [Color(0xFFEC4899), Color(0xFF8B5CF6)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                                boxShadow: [BoxShadow(color: const Color(0xFFEC4899).withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))],
+                                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
                               ),
-                              child: Text(
-                                'NEW GAME',
-                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: const Color(0xFF0066FF)),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: _newGame,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.auto_awesome_rounded, size: 16, color: Colors.white),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'NEW GAME',
+                                        style: GoogleFonts.quicksand(fontWeight: FontWeight.w700, fontSize: 11, color: Colors.white, letterSpacing: 0.5),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+
+                          const SizedBox(width: 10),
+
+                          // CALCULATE Button - Cyan & Blue Gradient
                           Expanded(
-                            child: ElevatedButton(
-                              onPressed: _calculateGame,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                backgroundColor: const Color(0xFF0066FF),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                elevation: 2,
+                            child: Container(
+                              height: 42,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                gradient: const LinearGradient(colors: [Color(0xFF00D4FF), Color(0xFF0095FF), Color(0xFF0066FF)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                                boxShadow: [BoxShadow(color: const Color(0xFF0066FF).withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 5))],
+                                border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
                               ),
-                              child: Text(
-                                'CALCULATE',
-                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: _calculateGame,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.rocket_launch_rounded, size: 16, color: Colors.white),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'CALCULATE',
+                                        style: GoogleFonts.quicksand(fontWeight: FontWeight.w700, fontSize: 11, color: Colors.white, letterSpacing: 0.5),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
