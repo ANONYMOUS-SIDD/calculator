@@ -21,6 +21,13 @@ class MarriageGame {
   }
 }
 
+// Enum to represent the three player modes
+enum PlayerMode {
+  blind, // Score automatically 0 (UI validation)
+  seen, // Score can be 0 or > 0, but not winner
+  win, // Score can be 0 or > 0, and is winner
+}
+
 class MarriagePlayer {
   final String userId;
   final String userName;
@@ -29,9 +36,8 @@ class MarriagePlayer {
   final bool isSequence;
   final bool isDoublee;
   final double pointsEarned;
-
-  // ✅ FIX: Added the missing 'currentScore' property
   final int currentScore;
+  final PlayerMode mode; // NEW: Track the player's mode (Blind, Seen, Win)
 
   MarriagePlayer({
     required this.userId,
@@ -41,8 +47,8 @@ class MarriagePlayer {
     this.isSequence = false,
     this.isDoublee = false,
     this.pointsEarned = 0,
-    // ✅ FIX: Added 'currentScore' to the constructor
     this.currentScore = 0,
+    required this.mode, // NEW: Required mode selection
   });
 
   /// Creates a copy of the MarriagePlayer with optional new values.
@@ -54,8 +60,8 @@ class MarriagePlayer {
     bool? isSequence,
     bool? isDoublee,
     double? pointsEarned,
-    // ✅ FIX: Added 'currentScore' to copyWith
     int? currentScore,
+    PlayerMode? mode, // NEW: Added mode to copyWith
   }) {
     return MarriagePlayer(
       userId: userId ?? this.userId,
@@ -65,7 +71,13 @@ class MarriagePlayer {
       isSequence: isSequence ?? this.isSequence,
       isDoublee: isDoublee ?? this.isDoublee,
       pointsEarned: pointsEarned ?? this.pointsEarned,
-      currentScore: currentScore ?? this.currentScore, // Use it
+      currentScore: currentScore ?? this.currentScore,
+      mode: mode ?? this.mode, // NEW: Use it
     );
   }
+
+  // Helper getters for convenience
+  bool get isBlind => mode == PlayerMode.blind;
+  bool get isSeen => mode == PlayerMode.seen;
+  bool get isWin => mode == PlayerMode.win;
 }

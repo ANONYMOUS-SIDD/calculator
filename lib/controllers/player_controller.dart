@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../model/marriage_game.dart';
@@ -8,7 +7,8 @@ class CalculatedResult {
   final MarriagePlayer player;
   final double netPoints;
   final bool isWinner;
-  const CalculatedResult({required this.player, required this.netPoints, this.isWinner = false});
+  final double totalPointForDisplay; // For display: total point for this player
+  const CalculatedResult({required this.player, required this.netPoints, this.isWinner = false, required this.totalPointForDisplay});
 }
 
 class PlayerController extends GetxController {
@@ -20,14 +20,22 @@ class PlayerController extends GetxController {
 
   final calculatedResults = <CalculatedResult>[].obs;
 
+  // Track if at least one winner is selected
+  final RxBool _hasWinnerSelected = false.obs;
+
+  // Getter for UI
+  bool get canCalculate => _hasWinnerSelected.value;
+
   @override
   void onInit() {
     super.onInit();
+    ever(players, (_) => _updateWinnerSelectionStatus());
   }
 
   void initializePlayers(List<MarriagePlayer> initialPlayers) {
     players.assignAll(initialPlayers);
     calculatedResults.clear();
+    _updateWinnerSelectionStatus();
   }
 
   void updatePlayersFromUsers(List<User> newUsers) {
@@ -37,11 +45,12 @@ class PlayerController extends GetxController {
       final String username = user.username;
       final oldPlayer = existingPlayersMap[username];
 
-      return MarriagePlayer(userId: username, userName: username, userImage: user.profileImagePath, isDoublee: oldPlayer?.isDoublee ?? false, currentScore: oldPlayer?.currentScore ?? 0, pointsEarned: oldPlayer?.pointsEarned ?? 0.0);
+      return MarriagePlayer(userId: username, userName: username, userImage: user.profileImagePath, isDoublee: oldPlayer?.isDoublee ?? false, currentScore: oldPlayer?.currentScore ?? 0, pointsEarned: oldPlayer?.pointsEarned ?? 0.0, mode: oldPlayer?.mode ?? PlayerMode.seen);
     }).toList();
 
     players.assignAll(newMarriagePlayers);
     calculatedResults.clear();
+    _updateWinnerSelectionStatus();
   }
 
   // --- Game Setup Management Methods ---
@@ -59,11 +68,12 @@ class PlayerController extends GetxController {
 
   void resetGame() {
     final List<MarriagePlayer> resetPlayers = players.map((player) {
-      return player.copyWith(currentScore: 0, pointsEarned: 0.0, isDoublee: false);
+      return player.copyWith(currentScore: 0, pointsEarned: 0.0, isDoublee: false, mode: PlayerMode.seen);
     }).toList();
 
     players.assignAll(resetPlayers);
     calculatedResults.clear();
+    _updateWinnerSelectionStatus();
   }
 
   void updatePlayerScore(String userName, double newPoints) {
@@ -72,6 +82,18 @@ class PlayerController extends GetxController {
       final updatedPlayer = players[index].copyWith(pointsEarned: newPoints, currentScore: newPoints.toInt());
       players[index] = updatedPlayer;
       if (calculatedResults.isNotEmpty) calculatedResults.clear();
+      _updateWinnerSelectionStatus();
+    }
+  }
+
+  void updatePlayerMode(String userName, PlayerMode newMode) {
+    final index = players.indexWhere((p) => p.userName == userName);
+    if (index != -1) {
+      final double newPoints = newMode == PlayerMode.blind ? 0.0 : players[index].pointsEarned;
+      final updatedPlayer = players[index].copyWith(mode: newMode, pointsEarned: newPoints, currentScore: newPoints.toInt());
+      players[index] = updatedPlayer;
+      if (calculatedResults.isNotEmpty) calculatedResults.clear();
+      _updateWinnerSelectionStatus();
     }
   }
 
@@ -80,10 +102,21 @@ class PlayerController extends GetxController {
     if (index != -1) {
       players[index] = players[index].copyWith(isDoublee: !players[index].isDoublee);
       if (calculatedResults.isNotEmpty) calculatedResults.clear();
+      _updateWinnerSelectionStatus();
     }
   }
 
-  // --- CORE CALCULATION (updated as you requested) ---
+  // --- Winner Selection Status Check ---
+  void _updateWinnerSelectionStatus() {
+    if (players.isEmpty) {
+      _hasWinnerSelected.value = false;
+      return;
+    }
+    final hasWinner = players.any((player) => player.mode == PlayerMode.win);
+    _hasWinnerSelected.value = hasWinner;
+  }
+
+  // --- UPDATED CORE CALCULATION (Following Exact Rules) ---
   void _calculateGameResults() {
     if (players.isEmpty) {
       calculatedResults.clear();
@@ -92,91 +125,98 @@ class PlayerController extends GetxController {
 
     final int totalPlayers = players.length;
 
-    // Determine the "winningPlayer" by highest input (used to determine the winnerBonus for totals)
-    final winningPlayer = players.reduce((a, b) => a.pointsEarned > b.pointsEarned ? a : b);
-    final double winnerBonus = winningPlayer.isDoublee ? 5.0 : 3.0;
+    // Get explicit winners (players in Win mode)
+    final List<MarriagePlayer> winners = players.where((player) => player.mode == PlayerMode.win).toList();
 
-    // Base total is sum of inputs (no bonus)
+    if (winners.isEmpty) {
+      calculatedResults.clear();
+      return;
+    }
+
+    // Step 1: Calculate base total (sum of all player points)
     final double baseTotal = players.fold(0.0, (sum, p) => sum + p.pointsEarned);
 
-    // First pass: compute preliminary net for every player (blind & seen)
-    // and detect who *qualifies* as a winner candidate (multiplied >= their totalPoint)
-    final List<_TempResult> temp = [];
-    final Set<String> winnerCandidates = {};
+    // Step 2: Calculate preliminary nets for non-winners (Blind and Seen players)
+    final List<_PlayerCalculation> nonWinnerCalculations = [];
+    final List<_PlayerCalculation> winnerCalculations = [];
 
+    // First, calculate for non-winners (Blind and Seen)
     for (var player in players) {
-      final double input = player.pointsEarned;
+      if (player.mode == PlayerMode.blind) {
+        // Blind player: loses baseTotal + 10
+        final double totalPoint = baseTotal + 10.0;
+        final double netPoints = -totalPoint;
 
-      if (input == 0) {
-        // Blind user: always loses baseTotal + 10
-        final double net = -(baseTotal + 10.0);
-        temp.add(_TempResult(player: player, net: net, isCandidate: false));
-        continue;
+        nonWinnerCalculations.add(_PlayerCalculation(player: player, totalPoint: totalPoint, netPoints: netPoints, displayPoints: player.pointsEarned));
+      } else if (player.mode == PlayerMode.seen) {
+        // Seen player calculation
+        double totalPoint = baseTotal;
+
+        // Add bonuses from winners (except for doublee seen players)
+        if (!player.isDoublee) {
+          for (var winner in winners) {
+            totalPoint += winner.isDoublee ? 5.0 : 3.0;
+          }
+        }
+
+        // Calculate net: (player points * total players) - total point
+        final double netPoints = (player.pointsEarned * totalPlayers) - totalPoint;
+
+        nonWinnerCalculations.add(_PlayerCalculation(player: player, totalPoint: totalPoint, netPoints: netPoints, displayPoints: player.pointsEarned));
+      } else if (player.mode == PlayerMode.win) {
+        // For win players, we'll calculate display points but net will be determined later
+        final double displayPoints = player.pointsEarned + (player.isDoublee ? 5.0 : 3.0);
+
+        winnerCalculations.add(
+          _PlayerCalculation(
+            player: player,
+            totalPoint: 0.0, // Will be calculated based on other players' nets
+            netPoints: 0.0, // Will be calculated based on other players' nets
+            displayPoints: displayPoints,
+          ),
+        );
       }
-
-      // Seen user:
-      // If this seen player has doublee (isDoublee), their personal totalPoint should NOT include the winner bonus.
-      final double totalPointForThisPlayer = player.isDoublee ? baseTotal : (baseTotal + winnerBonus);
-
-      final double multiplied = input * totalPlayers;
-      final double net = multiplied - totalPointForThisPlayer; // positive => exceeds totalPoint (win), negative => loss
-
-      final bool isCandidate = multiplied >= totalPointForThisPlayer;
-      if (isCandidate) winnerCandidates.add(player.userId);
-
-      temp.add(_TempResult(player: player, net: net, isCandidate: isCandidate));
     }
 
-    // If there are winners, winners must take the opposite of sum(others nets)
+    // Step 3: Calculate win players' nets by summing other players' losses/wins
     final List<CalculatedResult> finalResults = [];
 
-    if (winnerCandidates.isNotEmpty) {
-      // Sum nets of non-winners (these include blind users and seen losers)
-      double sumNonWinners = 0.0;
-      for (final t in temp) {
-        if (!winnerCandidates.contains(t.player.userId)) {
-          sumNonWinners += t.net;
-        }
+    if (winners.isNotEmpty) {
+      // Sum nets of all non-winners
+      double sumNonWinnerNets = 0.0;
+      for (final calc in nonWinnerCalculations) {
+        sumNonWinnerNets += calc.netPoints;
       }
 
-      // Distribute the opposite of sumNonWinners among winners equally
-      final List<_TempResult> winnersTemp = temp.where((t) => winnerCandidates.contains(t.player.userId)).toList();
-      final int winnersCount = winnersTemp.length;
+      // Each winner gets equal share of the negative sum (so winners get positive amount)
+      final double perWinnerShare = -sumNonWinnerNets / winners.length;
 
-      // If sumNonWinners is negative (loss total), then -sumNonWinners is positive (money to winners)
-      final double perWinnerShare = winnersCount > 0 ? (-sumNonWinners / winnersCount) : 0.0;
+      // Set win players' total point as the sum they need to achieve
+      final double winTotalPoint = baseTotal + (winners.first.isDoublee ? 5.0 : 3.0);
 
-      // Build final results: winners get perWinnerShare, non-winners keep their net
-      for (final t in temp) {
-        if (winnerCandidates.contains(t.player.userId)) {
-          finalResults.add(CalculatedResult(player: t.player, netPoints: perWinnerShare, isWinner: true));
-        } else {
-          finalResults.add(CalculatedResult(player: t.player, netPoints: t.net, isWinner: false));
-        }
-      }
-    } else {
-      // No winners -> keep preliminary nets as final results (no balancing to winners)
-      for (final t in temp) {
-        finalResults.add(CalculatedResult(player: t.player, netPoints: t.net, isWinner: false));
+      // Build final results for win players
+      for (final calc in winnerCalculations) {
+        finalResults.add(CalculatedResult(player: calc.player, netPoints: perWinnerShare, isWinner: true, totalPointForDisplay: winTotalPoint));
       }
     }
 
-    // Sort so winners (usually positive) come first
+    // Add non-winner results
+    for (final calc in nonWinnerCalculations) {
+      finalResults.add(CalculatedResult(player: calc.player, netPoints: calc.netPoints, isWinner: false, totalPointForDisplay: calc.totalPoint));
+    }
+
+    // Sort by net points (winners first)
     finalResults.sort((a, b) => b.netPoints.compareTo(a.netPoints));
     calculatedResults.value = finalResults;
-
-    // Snackbar feedback
-    final bool anyWinner = finalResults.any((r) => r.isWinner);
-    Get.snackbar('Results Ready', anyWinner ? 'Winner(s) determined!' : 'No winner this round.', backgroundColor: anyWinner ? const Color(0xFF10B981) : const Color(0xFFEF4444), colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
   }
 
   void calculateGame() {
+    if (!canCalculate) return;
     _calculateGameResults();
   }
 
   // --- Helpers for UI / Display ---
 
-  /// Summary text. For winners, displayed points = input + bonus (3 or 5 per their own mode).
   String getResultSummary() {
     if (calculatedResults.isEmpty) return 'No results calculated';
 
@@ -190,13 +230,13 @@ class PlayerController extends GetxController {
       final sign = net >= 0 ? '+' : '';
       final status = result.isWinner ? '🏆 Winner' : (net < 0 ? '🔴 Loss' : '🟢 Profit');
 
-      // For display: if player is winner (final), show input + own bonus; otherwise show input (blind => 0)
-      final double displayPoints = result.isWinner ? (p.pointsEarned + (p.isDoublee ? 5.0 : 3.0)) : (p.pointsEarned == 0 ? 0.0 : p.pointsEarned);
+      // For win players, show points with bonus; for others show original points
+      final double displayPlayerPoints = result.isWinner ? (p.pointsEarned + (p.isDoublee ? 5.0 : 3.0)) : p.pointsEarned;
 
-      final bonusText = result.isWinner ? ' (${p.pointsEarned.toStringAsFixed(0)} + ${p.isDoublee ? 5 : 3})' : '';
       buffer.writeln('${p.userName}: $sign${net.toStringAsFixed(1)} pts → $status');
-      buffer.writeln('   → Display Points: ${displayPoints.toStringAsFixed(1)}$bonusText');
-      buffer.writeln('   → Mode: ${p.pointsEarned == 0 ? 'Blind' : (p.isDoublee ? 'Seen (Doublee)' : 'Seen')}');
+      buffer.writeln('   → Player Points: ${displayPlayerPoints.toStringAsFixed(1)}');
+      buffer.writeln('   → Total Point: ${result.totalPointForDisplay.toStringAsFixed(1)}');
+      buffer.writeln('   → Mode: ${_getModeDisplayName(p.mode)}${p.isDoublee ? ' (Doublee)' : ''}');
       buffer.writeln('---');
     }
 
@@ -206,10 +246,11 @@ class PlayerController extends GetxController {
   String get winnerInfo {
     if (calculatedResults.isEmpty) return 'No result yet';
     final winners = calculatedResults.where((r) => r.isWinner).toList();
-    if (winners.isEmpty) return 'No winner this round';
+    if (winners.isEmpty) return 'No winners this round';
     if (winners.length == 1) {
       final w = winners.first.player;
-      return '${w.userName} is the winner (display ${w.pointsEarned + (w.isDoublee ? 5 : 3)} points)!';
+      final displayPoints = w.pointsEarned + (w.isDoublee ? 5.0 : 3.0);
+      return '${w.userName} is the winner (${displayPoints.toStringAsFixed(1)} points)!';
     }
     return 'Winners: ${winners.map((w) => w.player.userName).join(', ')}';
   }
@@ -217,9 +258,17 @@ class PlayerController extends GetxController {
   String get potInfo {
     if (players.isEmpty) return 'No players';
     final totalBasePoints = players.fold(0.0, (sum, player) => sum + player.pointsEarned);
-    final winningPlayer = players.reduce((a, b) => a.pointsEarned > b.pointsEarned ? a : b);
-    final winnerBonus = winningPlayer.isDoublee ? 5.0 : 3.0;
-    return 'Base Pot: ${totalBasePoints.toStringAsFixed(1)} | With Bonus (winner): ${(totalBasePoints + winnerBonus).toStringAsFixed(1)}';
+
+    final winners = players.where((player) => player.mode == PlayerMode.win).toList();
+    if (winners.isEmpty) return 'Base Total: ${totalBasePoints.toStringAsFixed(1)} | No winner selected';
+
+    // Calculate display total (base + bonus)
+    double displayTotal = totalBasePoints;
+    for (var winner in winners) {
+      displayTotal += winner.isDoublee ? 5.0 : 3.0;
+    }
+
+    return 'Base Total: ${totalBasePoints.toStringAsFixed(1)} | Display Total: ${displayTotal.toStringAsFixed(1)}';
   }
 
   double getMonetaryValue(double points) {
@@ -234,12 +283,29 @@ class PlayerController extends GetxController {
   bool get isGameReadyToCalculate {
     return players.isNotEmpty && players.every((player) => player.pointsEarned >= 0);
   }
+
+  String _getModeDisplayName(PlayerMode mode) {
+    switch (mode) {
+      case PlayerMode.blind:
+        return 'Blind';
+      case PlayerMode.seen:
+        return 'Seen';
+      case PlayerMode.win:
+        return 'Win';
+    }
+  }
+
+  List<MarriagePlayer> get selectedWinners {
+    return players.where((player) => player.mode == PlayerMode.win).toList();
+  }
 }
 
-/// Internal temp holder used during calculation
-class _TempResult {
+/// Internal temp holder for calculation
+class _PlayerCalculation {
   final MarriagePlayer player;
-  final double net;
-  final bool isCandidate;
-  _TempResult({required this.player, required this.net, required this.isCandidate});
+  final double totalPoint;
+  final double netPoints;
+  final double displayPoints;
+
+  _PlayerCalculation({required this.player, required this.totalPoint, required this.netPoints, required this.displayPoints});
 }

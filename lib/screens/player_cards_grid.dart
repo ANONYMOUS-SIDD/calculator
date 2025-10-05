@@ -74,8 +74,21 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
   void _initializePlayerStates(List<MarriagePlayer> players) {
     for (final player in players) {
       if (!_playerStates.containsKey(player.userName)) {
-        _playerStates[player.userName] = {'status': 'Seen', 'points': 0.0};
-        debugPrint('PlayerCardsGrid: Initialized state for ${player.userName}');
+        // Convert PlayerMode enum to string for UI state
+        String status = 'Seen';
+        switch (player.mode) {
+          case PlayerMode.blind:
+            status = 'Blind';
+            break;
+          case PlayerMode.seen:
+            status = 'Seen';
+            break;
+          case PlayerMode.win:
+            status = 'Win';
+            break;
+        }
+        _playerStates[player.userName] = {'status': status, 'points': player.pointsEarned};
+        debugPrint('PlayerCardsGrid: Initialized state for ${player.userName} with mode ${player.mode}');
       }
     }
 
@@ -88,8 +101,7 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
   void _updateCurrentWinner() {
     final players = _playerController.players;
     for (final player in players) {
-      final state = _playerStates[player.userName];
-      if (state != null && state['status'] == 'Win') {
+      if (player.mode == PlayerMode.win) {
         _currentWinnerUserName = player.userName;
         return;
       }
@@ -148,11 +160,6 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
     }
   }
 
-  // 🔥 UPDATED: White themed iOS-like dialog
-  // NOTE: This function assumes it is part of a StatefulWidget where 'widget'
-
-  // This function needs the context of a StatefulWidget/StatelessWidget to be defined.
-
   void _showDoubleeDialog(BuildContext context, MarriagePlayer player) {
     final isCurrentlyDoublee = player.isDoublee;
     final actionText = isCurrentlyDoublee ? 'Disable' : 'Enable';
@@ -173,7 +180,6 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                 // Header Section
                 Container(
                   width: double.infinity,
-                  // Adjusted padding after removing the icon
                   padding: const EdgeInsets.only(top: 20, bottom: 20, left: 20, right: 20),
                   decoration: const BoxDecoration(
                     border: Border(bottom: BorderSide(color: Color(0xFFE5E5EA), width: 0.5)),
@@ -183,25 +189,14 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                       // Title
                       Text(
                         "Doublee Mode",
-                        style: GoogleFonts.poppins(
-                          // Changed to Poppins
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1C1C1E),
-                        ),
+                        style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w600, color: const Color(0xFF1C1C1E)),
                       ),
                       const SizedBox(height: 4),
                       // Subtitle
                       Text(
                         confirmationText,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          // Changed to Poppins
-                          fontSize: 15,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFF666668),
-                          height: 1.4,
-                        ),
+                        style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w400, color: const Color(0xFF666668), height: 1.4),
                       ),
                     ],
                   ),
@@ -225,13 +220,7 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                             child: Center(
                               child: Text(
                                 "Cancel",
-                                style: GoogleFonts.poppins(
-                                  // Changed to Poppins
-                                  // Size 15 and weight w500 retained from previous step
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF007AFF),
-                                ),
+                                style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF007AFF)),
                               ),
                             ),
                           ),
@@ -246,22 +235,13 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                           child: InkWell(
                             onTap: () {
                               Navigator.pop(ctx);
-                              // NOTE: Assumes widget.onDoubleeToggle is available from the StatefulWidget context
                               widget.onDoubleeToggle(player.userName);
                             },
                             borderRadius: const BorderRadius.only(bottomRight: Radius.circular(14)),
                             child: Center(
                               child: Text(
                                 actionText,
-                                style: GoogleFonts.poppins(
-                                  // Changed to Poppins
-                                  // Size 15 and weight w500 retained from previous step
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: isCurrentlyDoublee
-                                      ? const Color(0xFFFF3B30) // System Red (Disable)
-                                      : const Color(0xFF34C759), // System Green (Enable)
-                                ),
+                                style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500, color: isCurrentlyDoublee ? const Color(0xFFFF3B30) : const Color(0xFF34C759)),
                               ),
                             ),
                           ),
@@ -401,7 +381,7 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
               itemBuilder: (context, index) {
                 final player = players[index];
                 final playerState = _getPlayerState(player.userName);
-                final isBlind = playerState['status'] == 'Blind';
+                final isBlind = player.mode == PlayerMode.blind;
 
                 return _PlayerCard(
                   player: player,
@@ -410,7 +390,6 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                   points: playerState['points'],
                   isDoublee: player.isDoublee,
                   isInputEnabled: !isBlind,
-                  // 🔥 NEW: Disable doublee toggle for blind users
                   isDoubleeEnabled: !isBlind,
                   currentWinnerUserName: _currentWinnerUserName,
                   onStatusChanged: (status) {
@@ -459,7 +438,7 @@ class _PlayerCard extends StatefulWidget {
   final double points;
   final bool isDoublee;
   final bool isInputEnabled;
-  final bool isDoubleeEnabled; // 🔥 NEW: Control doublee switch enable/disable
+  final bool isDoubleeEnabled;
   final String? currentWinnerUserName;
   final Function(String) onStatusChanged;
   final Function(double) onPointsChanged;
@@ -512,10 +491,10 @@ class _PlayerCardState extends State<_PlayerCard> {
       case 'Win':
         return _successGreen;
       case 'Seen':
-        return _primaryLight; // 🔥 CHANGE: Seen now uses blue color
+        return _primaryLight;
       case 'Blind':
       default:
-        return const Color(0xFF8B5CF6); // 🔥 CHANGE: Blind now uses purple color
+        return const Color(0xFF8B5CF6);
     }
   }
 
@@ -532,9 +511,9 @@ class _PlayerCardState extends State<_PlayerCard> {
       if (option == 'Win') {
         gradient = _winGradient;
       } else if (option == 'Seen') {
-        gradient = _seenGradient; // 🔥 CHANGE: Seen uses blue gradient
+        gradient = _seenGradient;
       } else if (option == 'Blind') {
-        gradient = _blindGradient; // 🔥 CHANGE: Blind uses purple gradient
+        gradient = _blindGradient;
       }
     }
 
@@ -542,7 +521,32 @@ class _PlayerCardState extends State<_PlayerCard> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: isWinDisabled ? null : () => widget.onStatusChanged(option),
+          onTap: isWinDisabled
+              ? null
+              : () {
+                  // Convert string option to PlayerMode enum
+                  PlayerMode mode;
+                  switch (option) {
+                    case 'Blind':
+                      mode = PlayerMode.blind;
+                      break;
+                    case 'Seen':
+                      mode = PlayerMode.seen;
+                      break;
+                    case 'Win':
+                      mode = PlayerMode.win;
+                      break;
+                    default:
+                      mode = PlayerMode.seen;
+                  }
+
+                  // Get the PlayerController and update the mode
+                  final playerController = Get.find<PlayerController>();
+                  playerController.updatePlayerMode(widget.player.userName, mode);
+
+                  // Also call the local callback to update UI state
+                  widget.onStatusChanged(option);
+                },
           borderRadius: BorderRadius.circular(4),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -694,14 +698,7 @@ class _PlayerCardState extends State<_PlayerCard> {
                               const SizedBox(width: 8),
                               Transform.scale(
                                 scale: 0.65,
-                                child: CupertinoSwitch(
-                                  value: widget.isDoublee,
-                                  onChanged: widget.isDoubleeEnabled ? (_) => widget.onDoubleeToggle() : null, // 🔥 CHANGE: Disabled for blind
-                                  activeColor: _doubleeColor,
-                                  trackColor: _iosBorder,
-                                  thumbColor: widget.isDoublee ? CupertinoColors.white : _textGrey,
-                                  key: ValueKey('${widget.player.userName}_${widget.isDoublee}'),
-                                ),
+                                child: CupertinoSwitch(value: widget.isDoublee, onChanged: widget.isDoubleeEnabled ? (_) => widget.onDoubleeToggle() : null, activeColor: _doubleeColor, trackColor: _iosBorder, thumbColor: widget.isDoublee ? CupertinoColors.white : _textGrey, key: ValueKey('${widget.player.userName}_${widget.isDoublee}')),
                               ),
                             ],
                           ),
@@ -713,7 +710,7 @@ class _PlayerCardState extends State<_PlayerCard> {
               ),
             ],
           ),
-          if (widget.isDoublee && widget.isDoubleeEnabled) // 🔥 CHANGE: Only show doublee badge if enabled
+          if (widget.isDoublee && widget.isDoubleeEnabled)
             Positioned(
               top: 10,
               right: 10,
