@@ -31,8 +31,9 @@ class AppInitializationWidget extends StatelessWidget {
         Hive.registerAdapter(UserAdapter());
       }
 
-      // 2. Open the critical box
+      // 2. Open the critical boxes
       await Hive.openBox<User>('usersBox');
+      await Hive.openBox('callBreakGames'); // ADD THIS LINE
 
       final userBox = Hive.box<User>('usersBox');
       const int defaultPlayerCount = 4; // Target game size
