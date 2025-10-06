@@ -124,7 +124,8 @@ class OTPickerDialog extends StatelessWidget {
                         ),
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            controller.setExtra(playerIndex, bid);
+                            // Tight means exactly met the bid (extra = 0)
+                            controller.setExtra(playerIndex, 0);
                             Navigator.of(context).pop();
                           },
                           icon: const Icon(Icons.shield_rounded, size: 16, color: Colors.white),
@@ -151,7 +152,11 @@ class OTPickerDialog extends StatelessWidget {
                         ),
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            controller.setExtra(playerIndex, 0);
+                            // Failed means got less than bid (negative extra)
+                            // Calculate how many tricks short they were
+                            final tricksShort = bid - 1; // They got 1 less than bid
+                            final negativeExtra = -tricksShort;
+                            controller.setExtra(playerIndex, negativeExtra);
                             Navigator.of(context).pop();
                           },
                           icon: const Icon(Icons.error_outline, size: 16, color: Colors.white),

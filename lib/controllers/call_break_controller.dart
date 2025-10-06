@@ -17,7 +17,7 @@ class CallBreakController extends GetxController {
   var otPhase = false.obs;
 
   var currentBids = <int>[0, 0, 0, 0].obs;
-  var currentExtras = <int>[0, 0, 0, 0].obs;
+  var currentExtras = <int>[0, 0, 0, 0].obs; // This stores EXTRA tricks
   var bidCompleted = <bool>[false, false, false, false].obs;
   var otCompleted = <bool>[false, false, false, false].obs;
 
@@ -101,14 +101,21 @@ class CallBreakController extends GetxController {
 
   void finishRound() {
     if (otCompleted.every((completed) => completed)) {
-      final points = List<int>.generate(4, (index) {
+      final points = List<double>.generate(4, (index) {
         final bid = currentBids[index];
-        final extra = currentExtras[index];
+        final extra = currentExtras[index]; // This is EXTRA tricks
 
-        if (extra < bid) {
-          return -bid;
+        // Calculate total tricks obtained
+        final totalTricks = bid + extra;
+
+        // Check if player failed to meet their bid
+        if (totalTricks < bid) {
+          // Failed bid: negative points equal to bid
+          return -bid.toDouble();
         } else {
-          return bid + (extra - bid);
+          // Successful bid: points = bid + extra
+          // But we need to store it as decimal for proper display
+          return bid + (extra * 0.1); // This makes 2.1, 2.2, 2.3 etc.
         }
       });
 
@@ -128,8 +135,8 @@ class CallBreakController extends GetxController {
     bidCompleted[playerIndex] = true;
   }
 
-  void setExtra(int playerIndex, int extra) {
-    currentExtras[playerIndex] = extra;
+  void setExtra(int playerIndex, int extraTricks) {
+    currentExtras[playerIndex] = extraTricks;
     otCompleted[playerIndex] = true;
   }
 
@@ -142,7 +149,41 @@ class CallBreakController extends GetxController {
     saveGame();
   }
 
-  int getTotalPoints(int playerIndex) {
-    return rounds.fold(0, (total, round) => total + round.points[playerIndex]);
+  double getTotalPoints(int playerIndex) {
+    return rounds.fold(0.0, (total, round) => total + round.points[playerIndex]);
+  }
+
+  // Helper method to format points for display
+  String formatPoints(double points) {
+    if (points < 0) {
+      return points.toStringAsFixed(0); // Show negative as whole number
+    } else {
+      // Show positive with one decimal place
+      return points.toStringAsFixed(1);
+    }
+  }
+
+  // Add this method for editing rounds
+  void updateRound(int roundIndex, List<int> newBids, List<int> newExtras) {
+    if (roundIndex >= 0 && roundIndex < rounds.length) {
+      // Recalculate points with new bids and extras
+      final points = List<double>.generate(4, (index) {
+        final bid = newBids[index];
+        final extra = newExtras[index];
+        final totalTricks = bid + extra;
+
+        if (totalTricks < bid) {
+          return -bid.toDouble();
+        } else {
+          return bid + (extra * 0.1);
+        }
+      });
+
+      // Update the round
+      rounds[roundIndex] = RoundData(roundNumber: rounds[roundIndex].roundNumber, bids: newBids, extras: newExtras, points: points);
+
+      saveGame();
+      update();
+    }
   }
 }
