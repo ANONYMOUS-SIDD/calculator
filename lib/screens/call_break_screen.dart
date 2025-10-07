@@ -81,13 +81,20 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
                     children: [
-                      // Top Players Section
-                      if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersHeader(), _buildPlayersContainer(), RoundHistory(tag: widget.tag)],
+                      // Small padding between app bar and round progress
+                      const SizedBox(height: 8),
+
+                      // Round Progress Section - Always at top
+                      if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersHeader(), const SizedBox(height: 1)],
+
+                      // Score Round History (table)
+                      if (controller.selectedPlayers.isNotEmpty) ...[RoundHistory(tag: widget.tag), const SizedBox(height: 1)],
+
+                      // Player Cards for bid selection
+                      if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersContainer(), const SizedBox(height: 1)],
 
                       // Empty State
                       if (controller.selectedPlayers.isEmpty) ...[_buildEmptyState()],
-
-                      const SizedBox(height: 20),
                     ],
                   ),
                 );
@@ -104,22 +111,18 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
 
   Widget _buildPlayersHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Reduced padding
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
         children: [
           // Game Icon - Compact
           Container(
-            width: 36, // Smaller
-            height: 36, // Smaller
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               gradient: LinearGradient(colors: [Colors.blueAccent, Colors.purpleAccent], begin: Alignment.topLeft, end: Alignment.bottomRight),
             ),
-            child: const Icon(
-              Icons.sports_esports_rounded,
-              color: Colors.white,
-              size: 18, // Smaller
-            ),
+            child: const Icon(Icons.sports_esports_rounded, color: Colors.white, size: 18),
           ),
           const SizedBox(width: 8),
 
@@ -130,11 +133,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
               children: [
                 Text(
                   "Round Progress",
-                  style: GoogleFonts.poppins(
-                    fontSize: 10, // Smaller
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[700],
-                  ),
+                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 2),
                 Obx(() {
@@ -142,7 +141,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
                   final progress = currentRound / 5.0; // Assuming 5 rounds total
 
                   return Container(
-                    height: 6, // Thin progress bar
+                    height: 6,
                     decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(3)),
                     child: Stack(
                       children: [
@@ -182,11 +181,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
                 Obx(
                   () => Text(
                     'R${controller.currentRound.value}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10, // Smaller
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                 ),
               ],
@@ -199,8 +194,8 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
 
   Widget _buildPlayersContainer() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8), // Reduced horizontal margin
-      padding: const EdgeInsets.all(12), // Reduced padding
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
