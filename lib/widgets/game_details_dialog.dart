@@ -352,14 +352,14 @@ class GameDetailsDialog {
                                                   ),
                                                   child: Center(
                                                     child: Text(
-                                                      totalPoints.abs().toStringAsFixed(0),
+                                                      totalPoints.abs().toStringAsFixed(1),
                                                       style: GoogleFonts.poppins(fontSize: isSmallScreen ? 6 : 7, fontWeight: FontWeight.w700, color: Colors.red),
                                                     ),
                                                   ),
                                                 )
                                               : Text(
-                                                  totalPoints.toStringAsFixed(0),
-                                                  style: GoogleFonts.poppins(fontSize: isSmallScreen ? 9 : 11, fontWeight: FontWeight.w700, color: Colors.green.shade600),
+                                                  totalPoints.toStringAsFixed(1),
+                                                  style: GoogleFonts.poppins(fontSize: isSmallScreen ? 9 : 11, fontWeight: FontWeight.w700, color: Colors.purple.shade700),
                                                 ),
                                         ),
                                         if (!isLast) Positioned(right: 0, top: 4, bottom: 4, child: Container(width: 0.8, color: Colors.blueAccent.withOpacity(0.4))),

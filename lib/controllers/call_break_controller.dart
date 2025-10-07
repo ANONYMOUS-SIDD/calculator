@@ -17,7 +17,7 @@ class CallBreakController extends GetxController {
   var isLoading = true.obs;
   var bidPhase = false.obs;
   var otPhase = false.obs;
-  var gameCompleted = false.obs; // ADD THIS LINE
+  var gameCompleted = false.obs;
 
   var currentBids = <int>[0, 0, 0, 0].obs;
   var currentExtras = <int>[0, 0, 0, 0].obs;
@@ -51,7 +51,7 @@ class CallBreakController extends GetxController {
         rounds.value = List<RoundData>.from((savedGame['rounds'] as List).map((e) => RoundData.fromJson(e)) ?? []);
         currentRound.value = savedGame['currentRound'] ?? 1;
         gameStarted.value = savedGame['gameStarted'] ?? false;
-        gameCompleted.value = savedGame['gameCompleted'] ?? false; // ADD THIS LINE
+        gameCompleted.value = savedGame['gameCompleted'] ?? false;
       }
       isLoading.value = false;
     } catch (e) {
@@ -67,20 +67,24 @@ class CallBreakController extends GetxController {
         'rounds': rounds.map((round) => round.toJson()).toList(),
         'currentRound': currentRound.value,
         'gameStarted': gameStarted.value,
-        'gameCompleted': gameCompleted.value, // ADD THIS LINE
+        'gameCompleted': gameCompleted.value,
       });
     } catch (e) {
       debugPrint('Error saving game: $e');
     }
   }
 
+  // ***************************************************************
+  // FIX APPLIED HERE: totalScores is now List<double>
+  // ***************************************************************
   void saveGameHistory() {
     try {
       // Only save history if game was actually played (has rounds)
       if (rounds.isNotEmpty && selectedPlayers.isNotEmpty) {
-        // Calculate total scores for each player
-        List<int> totalScores = List.generate(selectedPlayers.length, (index) {
-          return getTotalPoints(index).round();
+        // Calculate total scores for each player, preserving decimal precision
+        List<double> totalScores = List.generate(selectedPlayers.length, (index) {
+          // Changed from .round() to .toDouble() to keep the extra 0.1 points
+          return getTotalPoints(index).toDouble();
         });
 
         // PRINT EACH ROUND'S DATA
@@ -106,9 +110,17 @@ class CallBreakController extends GetxController {
         }
 
         // Save the game history WITH ROUND DATA
-        HistoryRepository.saveCompletedGame(playerNames: selectedPlayers.map((player) => player.username).toList(), totalScores: totalScores, totalRounds: rounds.length, gameTag: tag, rounds: rounds);
+        // IMPORTANT: HistoryRepository.saveCompletedGame must accept List<double> for totalScores.
+        HistoryRepository.saveCompletedGame(
+            playerNames: selectedPlayers.map((player) => player.username).toList(),
+            totalScores: totalScores, // Now a List<double>
+            totalRounds: rounds.length,
+            gameTag: tag,
+            rounds: rounds
+        );
 
         debugPrint('✅ Game history saved successfully for $tag');
+        // The debug print for Final Scores will now correctly show decimals
         debugPrint('📊 Players: ${selectedPlayers.map((p) => p.username).toList()}');
         debugPrint('🎯 Final Scores: $totalScores');
         debugPrint('🔄 Total Rounds played: ${rounds.length}');
@@ -118,13 +130,17 @@ class CallBreakController extends GetxController {
       debugPrint('❌ Error saving game history: $e');
     }
   }
+  // ***************************************************************
+  // END OF FIX
+  // ***************************************************************
+
 
   void setPlayers(List<User> players) {
     selectedPlayers.value = players;
     gameStarted.value = true;
     rounds.clear();
     currentRound.value = 1;
-    gameCompleted.value = false; // ADD THIS LINE
+    gameCompleted.value = false;
     resetCurrentRound();
     saveGame();
   }
@@ -214,6 +230,7 @@ class CallBreakController extends GetxController {
   }
 
   double getTotalPoints(int playerIndex) {
+    // This calculation was already correct.
     return rounds.fold(0.0, (total, round) => total + round.points[playerIndex]);
   }
 

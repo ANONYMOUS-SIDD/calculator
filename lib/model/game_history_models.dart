@@ -34,8 +34,11 @@ class CallBreakGameHistory {
   @HiveField(2)
   final List<String> playerNames;
 
+  // ***************************************************************
+  // FIX APPLIED HERE: totalScores is now List<double>
+  // ***************************************************************
   @HiveField(3)
-  final List<int> totalScores;
+  final List<double> totalScores; // ✅ Changed from List<int> to List<double> to preserve decimals
 
   @HiveField(4)
   final int totalRounds;
@@ -51,10 +54,10 @@ class CallBreakGameHistory {
     required this.gameId,
     required this.timestamp,
     required this.playerNames,
-    required this.totalScores,
+    required this.totalScores, // The constructor must accept List<double>
     required this.totalRounds,
     required this.gameTag,
-    required this.roundDetails, // ADD THIS PARAMETER
+    required this.roundDetails,
   });
 }
 

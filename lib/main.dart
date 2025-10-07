@@ -83,6 +83,8 @@ class AppInitializationWidget extends StatelessWidget {
 
   // Smart data migration - only clears data if there's a schema conflict
   Future<void> _handleDataMigration() async {
+    // Add this in initState() during development only
+
     try {
       // Try to open boxes normally first
       await Hive.openBox<CallBreakGameHistory>('callBreakGameHistory');

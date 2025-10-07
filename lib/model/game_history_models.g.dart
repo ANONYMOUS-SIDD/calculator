@@ -66,7 +66,7 @@ class CallBreakGameHistoryAdapter extends TypeAdapter<CallBreakGameHistory> {
       gameId: fields[0] as String,
       timestamp: fields[1] as DateTime,
       playerNames: (fields[2] as List).cast<String>(),
-      totalScores: (fields[3] as List).cast<int>(),
+      totalScores: (fields[3] as List).cast<double>(),
       totalRounds: fields[4] as int,
       gameTag: fields[5] as String,
       roundDetails: (fields[6] as List).cast<RoundHistoryData>(),
