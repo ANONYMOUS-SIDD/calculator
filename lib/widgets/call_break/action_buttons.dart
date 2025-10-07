@@ -90,23 +90,24 @@ class ActionButtons extends StatelessWidget {
     final bool canStartRound = controller.selectedPlayers.isNotEmpty && controller.currentRound.value <= 5 && !controller.bidPhase.value && !controller.otPhase.value;
     final bool allBidsCompleted = controller.bidCompleted.every((completed) => completed);
     final bool allOTCompleted = controller.otCompleted.every((completed) => completed);
+    final bool isGameCompleted = controller.currentRound.value > 5 || controller.gameCompleted.value;
 
     String buttonText;
     VoidCallback? onPressed;
-    Color backgroundColor = const Color(0xFF0D47A1); // Deep Dark Blue
+    Color backgroundColor = const Color(0xFF0D47A1);
     IconData icon = Icons.play_arrow;
 
-    if (controller.currentRound.value > 5) {
+    if (isGameCompleted) {
       buttonText = 'COMPLETED';
       onPressed = null;
-      backgroundColor = Colors.grey.shade600;
-      icon = Icons.check;
+      backgroundColor = Colors.green.shade600;
+      icon = Icons.check_circle;
     } else if (canStartRound) {
       buttonText = 'START ROUND ${controller.currentRound.value}';
       onPressed = controller.startRound;
       icon = Icons.play_arrow;
     } else if (controller.bidPhase.value && allBidsCompleted && !controller.otPhase.value) {
-      buttonText = 'FINISH ROUND ${controller.currentRound.value}';
+      buttonText = 'FINISH BID ${controller.currentRound.value}';
       onPressed = controller.finishBidPhase;
       icon = Icons.flag;
     } else if (controller.otPhase.value && allOTCompleted) {

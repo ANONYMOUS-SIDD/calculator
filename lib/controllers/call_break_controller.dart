@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../model/round_data.dart';
 import '../model/user_model.dart';
+import '../repositories/history_repository.dart';
 
 class CallBreakController extends GetxController {
   final String tag;
@@ -15,9 +17,10 @@ class CallBreakController extends GetxController {
   var isLoading = true.obs;
   var bidPhase = false.obs;
   var otPhase = false.obs;
+  var gameCompleted = false.obs; // ADD THIS LINE
 
   var currentBids = <int>[0, 0, 0, 0].obs;
-  var currentExtras = <int>[0, 0, 0, 0].obs; // This stores EXTRA tricks
+  var currentExtras = <int>[0, 0, 0, 0].obs;
   var bidCompleted = <bool>[false, false, false, false].obs;
   var otCompleted = <bool>[false, false, false, false].obs;
 
@@ -48,6 +51,7 @@ class CallBreakController extends GetxController {
         rounds.value = List<RoundData>.from((savedGame['rounds'] as List).map((e) => RoundData.fromJson(e)) ?? []);
         currentRound.value = savedGame['currentRound'] ?? 1;
         gameStarted.value = savedGame['gameStarted'] ?? false;
+        gameCompleted.value = savedGame['gameCompleted'] ?? false; // ADD THIS LINE
       }
       isLoading.value = false;
     } catch (e) {
@@ -58,9 +62,60 @@ class CallBreakController extends GetxController {
   void saveGame() {
     try {
       final callBreakBox = Hive.box('callBreakGames');
-      callBreakBox.put('currentGame', {'players': selectedPlayers, 'rounds': rounds.map((round) => round.toJson()).toList(), 'currentRound': currentRound.value, 'gameStarted': gameStarted.value});
+      callBreakBox.put('currentGame', {
+        'players': selectedPlayers,
+        'rounds': rounds.map((round) => round.toJson()).toList(),
+        'currentRound': currentRound.value,
+        'gameStarted': gameStarted.value,
+        'gameCompleted': gameCompleted.value, // ADD THIS LINE
+      });
     } catch (e) {
-      print('Error saving game: $e');
+      debugPrint('Error saving game: $e');
+    }
+  }
+
+  void saveGameHistory() {
+    try {
+      // Only save history if game was actually played (has rounds)
+      if (rounds.isNotEmpty && selectedPlayers.isNotEmpty) {
+        // Calculate total scores for each player
+        List<int> totalScores = List.generate(selectedPlayers.length, (index) {
+          return getTotalPoints(index).round();
+        });
+
+        // PRINT EACH ROUND'S DATA
+        debugPrint('📋 ROUND-BY-ROUND DATA:');
+        for (int i = 0; i < rounds.length; i++) {
+          final round = rounds[i];
+          debugPrint('🎯 Round ${round.roundNumber}:');
+          debugPrint('   Bids: ${round.bids}');
+          debugPrint('   Extras: ${round.extras}');
+          debugPrint('   Points: ${round.points}');
+
+          // Calculate and print bid success for each player
+          for (int playerIndex = 0; playerIndex < round.bids.length; playerIndex++) {
+            final bid = round.bids[playerIndex];
+            final extra = round.extras[playerIndex];
+            final totalTricks = bid + extra;
+            final bidSuccess = totalTricks >= bid;
+            final playerName = selectedPlayers[playerIndex].username;
+
+            debugPrint('   ${playerName}: Bid=$bid, OT=$extra, Total=$totalTricks, Success=$bidSuccess');
+          }
+          debugPrint(''); // Empty line for separation
+        }
+
+        // Save the game history WITH ROUND DATA
+        HistoryRepository.saveCompletedGame(playerNames: selectedPlayers.map((player) => player.username).toList(), totalScores: totalScores, totalRounds: rounds.length, gameTag: tag, rounds: rounds);
+
+        debugPrint('✅ Game history saved successfully for $tag');
+        debugPrint('📊 Players: ${selectedPlayers.map((p) => p.username).toList()}');
+        debugPrint('🎯 Final Scores: $totalScores');
+        debugPrint('🔄 Total Rounds played: ${rounds.length}');
+        debugPrint('📝 Round details saved: ${rounds.length} rounds with complete data');
+      }
+    } catch (e) {
+      debugPrint('❌ Error saving game history: $e');
     }
   }
 
@@ -69,6 +124,7 @@ class CallBreakController extends GetxController {
     gameStarted.value = true;
     rounds.clear();
     currentRound.value = 1;
+    gameCompleted.value = false; // ADD THIS LINE
     resetCurrentRound();
     saveGame();
   }
@@ -103,25 +159,26 @@ class CallBreakController extends GetxController {
     if (otCompleted.every((completed) => completed)) {
       final points = List<double>.generate(4, (index) {
         final bid = currentBids[index];
-        final extra = currentExtras[index]; // This is EXTRA tricks
-
-        // Calculate total tricks obtained
+        final extra = currentExtras[index];
         final totalTricks = bid + extra;
 
-        // Check if player failed to meet their bid
         if (totalTricks < bid) {
-          // Failed bid: negative points equal to bid
           return -bid.toDouble();
         } else {
-          // Successful bid: points = bid + extra
-          // But we need to store it as decimal for proper display
-          return bid + (extra * 0.1); // This makes 2.1, 2.2, 2.3 etc.
+          return bid + (extra * 0.1);
         }
       });
 
       final roundData = RoundData(roundNumber: currentRound.value, bids: List.from(currentBids), extras: List.from(currentExtras), points: points);
 
       rounds.add(roundData);
+
+      // CHECK IF GAME IS COMPLETED (after 5 rounds)
+      if (currentRound.value >= 5) {
+        gameCompleted.value = true;
+        saveGameHistory(); // Save history when game completes
+      }
+
       currentRound.value++;
       resetCurrentRound();
       saveGame();
@@ -141,10 +198,17 @@ class CallBreakController extends GetxController {
   }
 
   void resetGame() {
+    // Save history only if game was completed OR had rounds played
+    if (gameCompleted.value || rounds.isNotEmpty) {
+      saveGameHistory();
+    }
+
+    // Reset everything
     selectedPlayers.clear();
     rounds.clear();
     currentRound.value = 1;
     gameStarted.value = false;
+    gameCompleted.value = false; // Reset completion status
     resetCurrentRound();
     saveGame();
   }
@@ -153,20 +217,16 @@ class CallBreakController extends GetxController {
     return rounds.fold(0.0, (total, round) => total + round.points[playerIndex]);
   }
 
-  // Helper method to format points for display
   String formatPoints(double points) {
     if (points < 0) {
-      return points.toStringAsFixed(0); // Show negative as whole number
+      return points.toStringAsFixed(0);
     } else {
-      // Show positive with one decimal place
       return points.toStringAsFixed(1);
     }
   }
 
-  // Add this method for editing rounds
   void updateRound(int roundIndex, List<int> newBids, List<int> newExtras) {
     if (roundIndex >= 0 && roundIndex < rounds.length) {
-      // Recalculate points with new bids and extras
       final points = List<double>.generate(4, (index) {
         final bid = newBids[index];
         final extra = newExtras[index];
@@ -179,11 +239,16 @@ class CallBreakController extends GetxController {
         }
       });
 
-      // Update the round
       rounds[roundIndex] = RoundData(roundNumber: rounds[roundIndex].roundNumber, bids: newBids, extras: newExtras, points: points);
 
       saveGame();
       update();
     }
+  }
+
+  // Temporary test method (you can remove later)
+  void testHistorySave() {
+    saveGameHistory();
+    Get.snackbar('History Test', 'Game history saved for testing!', backgroundColor: Colors.green, colorText: Colors.white);
   }
 }

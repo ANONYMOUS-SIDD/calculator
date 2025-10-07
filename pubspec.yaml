@@ -52,6 +52,7 @@ dependencies:
   awesome_snackbar_content: ^0.1.8
   adaptive_dialog: ^2.5.0
   numberpicker: ^2.1.2
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
