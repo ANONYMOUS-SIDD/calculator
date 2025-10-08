@@ -165,10 +165,7 @@ class _RoundHistoryState extends State<RoundHistory> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // Reduced vertical padding
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8)),
-                        ),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8.0)),
                         child: Row(
                           children: [
                             ...controller.currentBids.asMap().entries.map((entry) {
@@ -197,8 +194,8 @@ class _RoundHistoryState extends State<RoundHistory> {
                                           ],
                                         )
                                       : Container(
-                                          width: 28, // Smaller empty container
-                                          height: 28,
+                                          width: 30, // Smaller empty container
+                                          height: 30,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             border: Border.all(color: Colors.pink.withOpacity(0.3), width: 1.5),
@@ -316,28 +313,28 @@ class _RoundHistoryState extends State<RoundHistory> {
                           return Expanded(
                             key: ValueKey('player_points_$index'),
                             child: Container(
-                              height: 24, // Reduced height
+                              height: 32, // Reduced height
                               child: Stack(
                                 children: [
                                   Center(
                                     child: isNegative
                                         ? Container(
-                                            width: 22, // Smaller circle
-                                            height: 22,
+                                            width: 30, // Smaller circle
+                                            height: 30,
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              border: Border.all(color: Colors.red, width: 1.2), // Thinner border
+                                              border: Border.all(color: Colors.red, width: 1.5),
                                             ),
                                             child: Center(
                                               child: Text(
                                                 totalPoints.abs().toStringAsFixed(1),
-                                                style: GoogleFonts.poppins(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.red), // Smaller font
+                                                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.red), // Smaller font
                                               ),
                                             ),
                                           )
                                         : Text(
                                             totalPoints.toStringAsFixed(1),
-                                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.green.shade600), // Adjusted font
+                                            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.purple.shade600), // Adjusted font
                                           ),
                                   ),
                                   if (!isLast) Positioned(right: 0, top: 4, bottom: 4, child: Container(width: 0.8, color: Colors.blueAccent.withOpacity(0.4))),
@@ -361,11 +358,11 @@ class _RoundHistoryState extends State<RoundHistory> {
   // Helper method for current bid circles with consistent height
   Widget _buildCurrentBidCircle(int bid, double fontSize, Color color) {
     return Container(
-      width: 28, // Consistent size
-      height: 28,
+      width: 30, // Consistent size
+      height: 30,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: color, width: 1.8), // Slightly thinner border
+        border: Border.all(color: color, width: 1.4), // Slightly thinner border
       ),
       child: Center(
         child: Text(

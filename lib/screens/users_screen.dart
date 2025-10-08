@@ -4,11 +4,12 @@ import 'dart:io';
 
 import 'package:calculators/model/user_model.dart';
 import 'package:calculators/screens/add_user_dialog.dart';
-import 'package:calculators/screens/user_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:lottie/lottie.dart';
+
+import '../widgets/moder_app_bar.dart';
 
 class UsersScreen extends StatelessWidget {
   final String tag;
@@ -20,85 +21,82 @@ class UsersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: ModernAppBar(title: "User Detail"),
       backgroundColor: const Color(0xFFF8FAFF),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFF8FAFF), Color(0xFFF0F7FF), Color(0xFFE8F4FF)]),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const UserAppBar(title: "Users"),
-
-              // Stats Overview Card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.white, const Color(0xFFF0F7FF)]),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(color: const Color(0xFF0066FF).withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8)),
-                      BoxShadow(color: Colors.white.withOpacity(0.9), blurRadius: 10, offset: const Offset(0, -4)),
-                    ],
-                  ),
-                  child: ValueListenableBuilder(
-                    valueListenable: Hive.box<User>('usersBox').listenable(),
-                    builder: (context, Box<User> box, _) {
-                      final users = box.values.toList();
-                      final totalWins = users.fold(0, (sum, user) => sum + user.wins);
-                      final activeUsers = users.length;
-
-                      return Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [_buildStatItem("Total Players", users.length.toString(), Icons.people_alt_rounded), _buildStatItem("Active Games", "12", Icons.sports_esports_rounded), _buildStatItem("Total Wins", totalWins.toString(), Icons.emoji_events_rounded)]);
-                    },
-                  ),
+        child: Column(
+          children: [
+            // Stats Overview Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [Colors.white, const Color(0xFFF0F7FF)]),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFF0066FF).withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8)),
+                    BoxShadow(color: Colors.white.withOpacity(0.9), blurRadius: 10, offset: const Offset(0, -4)),
+                  ],
                 ),
-              ),
-
-              // Reactive list builder using Hive
-              Expanded(
                 child: ValueListenableBuilder(
                   valueListenable: Hive.box<User>('usersBox').listenable(),
                   builder: (context, Box<User> box, _) {
-                    final users = box.values.toList().cast<User>();
+                    final users = box.values.toList();
+                    final totalWins = users.fold(0, (sum, user) => sum + user.wins);
+                    final activeUsers = users.length;
 
-                    if (users.isEmpty) {
-                      return _buildEmptyState();
-                    }
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                            child: Text(
-                              "Player Rankings • ${users.length} Players",
-                              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1D2B), letterSpacing: -0.3),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: ListView.builder(
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: users.length,
-                              itemBuilder: (context, index) {
-                                final user = users[index];
-                                return _UserTile(user: user, rank: index + 1, accentColor: const Color(0xFF0066FF));
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
+                    return Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [_buildStatItem("Total Players", users.length.toString(), Icons.people_alt_rounded), _buildStatItem("Active Games", "12", Icons.sports_esports_rounded), _buildStatItem("Total Wins", totalWins.toString(), Icons.emoji_events_rounded)]);
                   },
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // Reactive list builder using Hive
+            Expanded(
+              child: ValueListenableBuilder(
+                valueListenable: Hive.box<User>('usersBox').listenable(),
+                builder: (context, Box<User> box, _) {
+                  final users = box.values.toList().cast<User>();
+
+                  if (users.isEmpty) {
+                    return _buildEmptyState();
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                          child: Text(
+                            "Player Rankings • ${users.length} Players",
+                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1A1D2B), letterSpacing: -0.3),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: ListView.builder(
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: users.length,
+                            itemBuilder: (context, index) {
+                              final user = users[index];
+                              return _UserTile(user: user, rank: index + 1, accentColor: const Color(0xFF0066FF));
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(

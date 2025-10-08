@@ -69,7 +69,10 @@ class ActionButtons extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: controller.resetGame,
+          // --------------------------------------------------------------------
+          // CHANGED: Call the new method to show the New Player/Old Player dialog
+          // --------------------------------------------------------------------
+          onTap: controller.showNewGameOptions,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

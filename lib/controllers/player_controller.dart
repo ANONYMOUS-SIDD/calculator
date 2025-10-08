@@ -55,8 +55,14 @@ class PlayerController extends GetxController {
 
   // --- Game Setup Management Methods ---
   void updatePlayerCount(int newCount) {
+    print('🎯 updatePlayerCount called with: $newCount');
+    print('🎯 Current selectedPlayerCount: ${selectedPlayerCount.value}');
+
     if (newCount >= 3 && newCount <= 6) {
       selectedPlayerCount.value = newCount;
+      print('✅ Player count updated to: $newCount');
+    } else {
+      print('❌ Invalid player count: $newCount (must be 3-6)');
     }
   }
 

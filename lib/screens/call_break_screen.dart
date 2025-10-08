@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
 
 import '../controllers/call_break_controller.dart';
-import '../screens/user_app_bar.dart';
 import '../widgets/call_break/action_buttons.dart';
 import '../widgets/call_break/player_card.dart';
 import '../widgets/call_break/round_history.dart';
+import '../widgets/moder_app_bar.dart';
 import '../widgets/player_selection_dialog.dart';
 
 class CallBreakScreen extends StatefulWidget {
@@ -42,16 +43,23 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
       if (controller.selectedPlayers.isEmpty) {
         return FloatingActionButton(
           onPressed: _showPlayerSelectionDialog,
-          backgroundColor: Colors.blueAccent,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
           child: Container(
-            width: 60,
-            height: 60,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(colors: [Color(0xFF00C6FF), Color(0xFF0066FF)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-              boxShadow: [BoxShadow(color: const Color(0xFF0066FF).withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))],
+              borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              boxShadow: [
+                // iOS-like glow effect
+                BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.5), blurRadius: 20, spreadRadius: 3, offset: const Offset(0, 8)),
+                // Subtle shadow for depth
+                BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4)),
+              ],
+              border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
             ),
-            child: const Icon(Icons.group_add, color: Colors.white, size: 28),
+            child: const Icon(Icons.supervisor_account_rounded, color: Colors.white, size: 28),
           ),
         );
       }
@@ -64,47 +72,45 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding = screenWidth < 400 ? 12.0 : 16.0;
 
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFF),
-        floatingActionButton: _buildFloatingActionButton(),
-        body: Column(
-          children: [
-            const UserAppBar(title: "Call Break"),
-            Expanded(
-              child: Obx(() {
-                if (controller.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+    return Scaffold(
+      appBar: ModernAppBar(title: "Call Break"),
+      backgroundColor: const Color(0xFFF8FAFF),
+      floatingActionButton: _buildFloatingActionButton(),
+      body: Column(
+        children: [
+          Expanded(
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                return SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: Column(
-                    children: [
-                      // Small padding between app bar and round progress
-                      const SizedBox(height: 8),
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Column(
+                  children: [
+                    // Small padding between app bar and round progress
+                    const SizedBox(height: 8),
 
-                      // Round Progress Section - Always at top
-                      if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersHeader(), const SizedBox(height: 1)],
+                    // Round Progress Section - Always at top
+                    if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersHeader(), const SizedBox(height: 5)],
 
-                      // Score Round History (table)
-                      if (controller.selectedPlayers.isNotEmpty) ...[RoundHistory(tag: widget.tag), const SizedBox(height: 1)],
+                    // Score Round History (table)
+                    if (controller.selectedPlayers.isNotEmpty) ...[RoundHistory(tag: widget.tag), const SizedBox(height: 5)],
 
-                      // Player Cards for bid selection
-                      if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersContainer(), const SizedBox(height: 1)],
+                    // Player Cards for bid selection
+                    if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersContainer(), const SizedBox(height: 5)],
 
-                      // Empty State
-                      if (controller.selectedPlayers.isEmpty) ...[_buildEmptyState()],
-                    ],
-                  ),
-                );
-              }),
-            ),
+                    // Empty State
+                    if (controller.selectedPlayers.isEmpty) ...[_buildEmptyState()],
+                  ],
+                ),
+              );
+            }),
+          ),
 
-            // Bottom Action Buttons
-            Obx(() => controller.selectedPlayers.isNotEmpty ? ActionButtons(tag: widget.tag) : const SizedBox()),
-          ],
-        ),
+          // Bottom Action Buttons
+          Obx(() => controller.selectedPlayers.isNotEmpty ? ActionButtons(tag: widget.tag) : const SizedBox()),
+        ],
       ),
     );
   }
@@ -209,31 +215,19 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Column(
-      children: [
-        const SizedBox(height: 80),
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            color: Colors.blueAccent.withOpacity(0.1),
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.blueAccent.withOpacity(0.3), width: 2),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 200),
+          SizedBox(width: 200, height: 200, child: Lottie.asset('assets/lottie/intro3.json', fit: BoxFit.contain)),
+
+          Text(
+            "Tap + icon to add players",
+            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.grey[700]),
           ),
-          child: Icon(Icons.people_outline, size: 60, color: Colors.blueAccent.withOpacity(0.6)),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          "No Players Selected",
-          style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.grey[700]),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          "Tap the + button to select 4 players",
-          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey[500], fontWeight: FontWeight.w500),
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
 

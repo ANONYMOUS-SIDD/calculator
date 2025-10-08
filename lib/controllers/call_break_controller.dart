@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../model/round_data.dart';
@@ -62,78 +63,36 @@ class CallBreakController extends GetxController {
   void saveGame() {
     try {
       final callBreakBox = Hive.box('callBreakGames');
-      callBreakBox.put('currentGame', {
-        'players': selectedPlayers,
-        'rounds': rounds.map((round) => round.toJson()).toList(),
-        'currentRound': currentRound.value,
-        'gameStarted': gameStarted.value,
-        'gameCompleted': gameCompleted.value,
-      });
+      callBreakBox.put('currentGame', {'players': selectedPlayers, 'rounds': rounds.map((round) => round.toJson()).toList(), 'currentRound': currentRound.value, 'gameStarted': gameStarted.value, 'gameCompleted': gameCompleted.value});
     } catch (e) {
       debugPrint('Error saving game: $e');
     }
   }
 
-  // ***************************************************************
-  // FIX APPLIED HERE: totalScores is now List<double>
-  // ***************************************************************
   void saveGameHistory() {
     try {
       // Only save history if game was actually played (has rounds)
       if (rounds.isNotEmpty && selectedPlayers.isNotEmpty) {
         // Calculate total scores for each player, preserving decimal precision
         List<double> totalScores = List.generate(selectedPlayers.length, (index) {
-          // Changed from .round() to .toDouble() to keep the extra 0.1 points
           return getTotalPoints(index).toDouble();
         });
 
-        // PRINT EACH ROUND'S DATA
-        debugPrint('📋 ROUND-BY-ROUND DATA:');
-        for (int i = 0; i < rounds.length; i++) {
-          final round = rounds[i];
-          debugPrint('🎯 Round ${round.roundNumber}:');
-          debugPrint('   Bids: ${round.bids}');
-          debugPrint('   Extras: ${round.extras}');
-          debugPrint('   Points: ${round.points}');
-
-          // Calculate and print bid success for each player
-          for (int playerIndex = 0; playerIndex < round.bids.length; playerIndex++) {
-            final bid = round.bids[playerIndex];
-            final extra = round.extras[playerIndex];
-            final totalTricks = bid + extra;
-            final bidSuccess = totalTricks >= bid;
-            final playerName = selectedPlayers[playerIndex].username;
-
-            debugPrint('   ${playerName}: Bid=$bid, OT=$extra, Total=$totalTricks, Success=$bidSuccess');
-          }
-          debugPrint(''); // Empty line for separation
-        }
-
         // Save the game history WITH ROUND DATA
-        // IMPORTANT: HistoryRepository.saveCompletedGame must accept List<double> for totalScores.
         HistoryRepository.saveCompletedGame(
-            playerNames: selectedPlayers.map((player) => player.username).toList(),
-            totalScores: totalScores, // Now a List<double>
-            totalRounds: rounds.length,
-            gameTag: tag,
-            rounds: rounds
+          playerNames: selectedPlayers.map((player) => player.username).toList(),
+          totalScores: totalScores, // Now a List<double>
+          totalRounds: rounds.length,
+          gameTag: tag,
+          rounds: rounds,
         );
 
         debugPrint('✅ Game history saved successfully for $tag');
-        // The debug print for Final Scores will now correctly show decimals
-        debugPrint('📊 Players: ${selectedPlayers.map((p) => p.username).toList()}');
-        debugPrint('🎯 Final Scores: $totalScores');
-        debugPrint('🔄 Total Rounds played: ${rounds.length}');
-        debugPrint('📝 Round details saved: ${rounds.length} rounds with complete data');
       }
     } catch (e) {
       debugPrint('❌ Error saving game history: $e');
     }
   }
-  // ***************************************************************
-  // END OF FIX
-  // ***************************************************************
-
 
   void setPlayers(List<User> players) {
     selectedPlayers.value = players;
@@ -192,7 +151,10 @@ class CallBreakController extends GetxController {
       // CHECK IF GAME IS COMPLETED (after 5 rounds)
       if (currentRound.value >= 5) {
         gameCompleted.value = true;
-        saveGameHistory(); // Save history when game completes
+        // -------------------------------------------------------------------
+        // REMOVED: saveGameHistory() is no longer called here.
+        // It is only called when the user presses 'New Game'.
+        // -------------------------------------------------------------------
       }
 
       currentRound.value++;
@@ -213,24 +175,166 @@ class CallBreakController extends GetxController {
     otCompleted[playerIndex] = true;
   }
 
-  void resetGame() {
-    // Save history only if game was completed OR had rounds played
-    if (gameCompleted.value || rounds.isNotEmpty) {
+  // -------------------------------------------------------------------
+  // REMOVED old resetGame() and replaced it with a dialog caller
+  // -------------------------------------------------------------------
+  void showNewGameOptions() {
+    bool requiresConfirmation = rounds.isNotEmpty;
+
+    Get.defaultDialog(
+      // --- DIALOG STYLING ---
+      backgroundColor: Colors.white,
+      radius: 14.0,
+      title: "",
+      titlePadding: EdgeInsets.zero,
+      contentPadding: EdgeInsets.zero,
+
+      // --- CUSTOM CONTENT SECTION ---
+      content: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        //mainAxisSize: MainAxisSize.max,
+        children: [
+          // 1. Title (Top padding removed by adjusting the bottom value)
+          Padding(
+            padding: const EdgeInsets.only(top: 0, bottom: 5.0, left: 15.0, right: 15.0),
+            child: Text(
+              "Start New Game",
+              style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.black),
+            ),
+          ),
+
+          // 2. Warning/Info Content
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0),
+            child: Column(
+              children: [
+                if (requiresConfirmation)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8, top: 4),
+                    child: Text(
+                      "The current game progress will be saved before starting a new game.",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.red.shade600, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                Padding(
+                  padding: EdgeInsets.only(bottom: requiresConfirmation ? 15.0 : 10.0),
+                  child: Text(
+                    "New Player: Fresh New Game\nOld Player: Keep Existing Player",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+
+      // --- CUSTOM ACTIONS SECTION (Single Row with PERFECTLY JOINED Dividers) ---
+      actions: [
+        // Top Divider (separates content from actions)
+        Column(
+          children: [
+            const Divider(color: Colors.black12, height: 1.0, thickness: 0.8),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // 1. New Player Action (Left Button - Destructive)
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 5), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
+                    onPressed: () {
+                      Get.back();
+                      resetGameFresh();
+                    },
+                    child: Text(
+                      "New Player",
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.red.shade600),
+                    ),
+                  ),
+                ),
+
+                // Vertical Divider (Joins perfectly with the horizontal divider above)
+                Container(
+                  height: 40, // Match button height visually
+                  width: 0.8,
+                  color: Colors.black12,
+                ),
+
+                // 2. Old Player Action (Right Button)
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 5), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
+                    onPressed: () {
+                      if (rounds.isNotEmpty) saveGameHistory();
+                      Get.back();
+                      resetGameExisting();
+                    },
+                    child: Text(
+                      "Old Player",
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.blue),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // New Player option: Clears everything and starts from player selection
+  void resetGameFresh() {
+    debugPrint("ACTION: Starting FRESH game (New Player).");
+
+    // Save history of the game that was just completed/reset (if any data exists)
+    if (rounds.isNotEmpty) {
       saveGameHistory();
     }
 
-    // Reset everything
+    // 1. Reset all game variables, including players
     selectedPlayers.clear();
     rounds.clear();
     currentRound.value = 1;
-    gameStarted.value = false;
-    gameCompleted.value = false; // Reset completion status
+    gameStarted.value = false; // Player selection screen should follow
+    gameCompleted.value = false;
     resetCurrentRound();
     saveGame();
+
+    // Optional: Navigate to Player Selection Screen
+    // Get.toNamed('/playerSelection');
   }
 
+  // Old Player option: Keeps existing players, resets scores, starts round 1
+  void resetGameExisting() {
+    debugPrint("ACTION: Starting game from Round 1 (Old Player).");
+
+    // We rely on the dialog's 'Old Player' button to save the previous game history first.
+
+    // 1. Keep selectedPlayers list intact.
+    // 2. Reset game state
+    rounds.clear(); // Clear scores/rounds for the new game
+    currentRound.value = 1;
+    gameStarted.value = true; // Still playing with the same players
+    gameCompleted.value = false;
+    resetCurrentRound();
+    saveGame();
+
+    // IMPORTANT: Log the new empty game state as the initial history entry
+    // This is the history of the *new* game being started.
+    // However, since history is only saved when rounds are NOT empty,
+    // we simply rely on the logic that the NEXT time 'New Game' is pressed,
+    // the current (about to be played) game history will be saved.
+  }
+
+  // -------------------------------------------------------------------
+  // END OF NEW LOGIC
+  // -------------------------------------------------------------------
+
   double getTotalPoints(int playerIndex) {
-    // This calculation was already correct.
     return rounds.fold(0.0, (total, round) => total + round.points[playerIndex]);
   }
 
@@ -263,7 +367,6 @@ class CallBreakController extends GetxController {
     }
   }
 
-  // Temporary test method (you can remove later)
   void testHistorySave() {
     saveGameHistory();
     Get.snackbar('History Test', 'Game history saved for testing!', backgroundColor: Colors.green, colorText: Colors.white);

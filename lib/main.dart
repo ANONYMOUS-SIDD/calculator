@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'model/marriage_game_history.dart';
+
 void main() async {
   // 1. Ensure Flutter framework is initialized before any async operations
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +49,14 @@ class AppInitializationWidget extends StatelessWidget {
       if (!Hive.isAdapterRegistered(3)) {
         Hive.registerAdapter(RoundHistoryDataAdapter());
       }
+      // ADD MARRIAGE GAME ADAPTERS - BOTH ARE NEEDED
+      if (!Hive.isAdapterRegistered(4)) {
+        Hive.registerAdapter(MarriageGameHistoryAdapter());
+      }
+      // ADD THIS LINE FOR MARRIAGE PLAYER HISTORY (typeId 5)
+      if (!Hive.isAdapterRegistered(5)) {
+        Hive.registerAdapter(MarriagePlayerHistoryAdapter());
+      }
 
       // 2. SMART DATA MIGRATION - Only clear if there's a schema conflict
       await _handleDataMigration();
@@ -56,6 +66,7 @@ class AppInitializationWidget extends StatelessWidget {
       await Hive.openBox('callBreakGames');
       await Hive.openBox<CallBreakGameHistory>('callBreakGameHistory'); // ADD THIS
       await Hive.openBox<PlayerOverallStats>('playerStats'); // ADD THIS
+      await Hive.openBox<MarriageGameHistory>('marriageGameHistory');
 
       // 4. INITIALIZE HISTORY REPOSITORY - ADD THIS LINE
       await HistoryRepository.init();
@@ -65,11 +76,9 @@ class AppInitializationWidget extends StatelessWidget {
 
       // 5. Initial data check: Ensure we have enough users to start a game
       if (userBox.isEmpty) {
-        // Add default users if the box is completely empty
-        for (int i = 1; i <= defaultPlayerCount; i++) {
-          // Creating the default users
-          userBox.add(User(username: 'Guest Player $i', profileImagePath: null, wins: 0, rank: i));
-        }
+        // Keep the box empty - users will be added manually through the app
+        debugPrint('✅ User box is empty - ready for manual user creation');
+        // No default users will be created
       }
 
       // Initialize the PlayerController
