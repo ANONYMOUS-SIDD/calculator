@@ -976,13 +976,16 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
               ),
               Divider(height: 1, thickness: 1, color: Colors.blue.shade50),
               ...players.map((player) {
-                final double netPointChange = _calculateNetPointsForHistory(player, players);
-                final double totalAmount = netPointChange * pointsPerRupee;
+                // 🎯 CRITICAL FIX: Read the stored net values directly.
+                // The recalculation logic and the reliance on _calculateNetPointsForHistory are removed.
+                final double netPointChange = player.netPointsChange;
+                final double totalAmount = player.netAmountChange;
 
                 final bool isPositive = netPointChange > 0;
                 final Color primaryColor = isPositive ? Colors.green.shade600 : Colors.red.shade600;
                 final Color secondaryColor = isPositive ? Colors.blue.shade600 : Colors.orange.shade600;
 
+                // The call to _buildPlayerRow remains exactly as it was, but with the correct values.
                 return _buildPlayerRow(player: player, netPointChange: netPointChange, totalAmount: totalAmount, primaryColor: primaryColor, secondaryColor: secondaryColor, playerFlex: playerFlex, pointsFlex: pointsFlex, amountFlex: amountFlex, isSmallScreen: isSmallScreen);
               }).toList(),
             ],

@@ -59,5 +59,26 @@ class MarriagePlayerHistory {
   @HiveField(8)
   final String mode; // Store as String for simplicity
 
-  MarriagePlayerHistory({required this.userId, required this.userName, this.userImage, required this.maalPoints, required this.isSequence, required this.isDoublee, required this.pointsEarned, required this.currentScore, required this.mode});
+  // ⭐️ NEW FIELDS TO STORE CALCULATED RESULTS ⭐️
+  @HiveField(9) // Use the next available typeId
+  final double netPointsChange;
+
+  @HiveField(10) // Use the next available typeId
+  final double netAmountChange;
+  // ⭐️ ---------------------------------- ⭐️
+
+  MarriagePlayerHistory({
+    required this.userId,
+    required this.userName,
+    this.userImage,
+    required this.maalPoints,
+    required this.isSequence,
+    required this.isDoublee,
+    required this.pointsEarned,
+    required this.currentScore,
+    required this.mode,
+    // Add new fields to constructor
+    required this.netPointsChange,
+    required this.netAmountChange,
+  });
 }

@@ -78,13 +78,15 @@ class MarriagePlayerHistoryAdapter extends TypeAdapter<MarriagePlayerHistory> {
       pointsEarned: fields[6] as double,
       currentScore: fields[7] as int,
       mode: fields[8] as String,
+      netPointsChange: fields[9] as double,
+      netAmountChange: fields[10] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, MarriagePlayerHistory obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.userId)
       ..writeByte(1)
@@ -102,7 +104,11 @@ class MarriagePlayerHistoryAdapter extends TypeAdapter<MarriagePlayerHistory> {
       ..writeByte(7)
       ..write(obj.currentScore)
       ..writeByte(8)
-      ..write(obj.mode);
+      ..write(obj.mode)
+      ..writeByte(9)
+      ..write(obj.netPointsChange)
+      ..writeByte(10)
+      ..write(obj.netAmountChange);
   }
 
   @override

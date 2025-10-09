@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:calculators/model/user_model.dart';
 import 'package:calculators/screens/add_user_dialog.dart';
+import 'package:calculators/widgets/user_stats_dialog.dart'; // ADD THIS IMPORT
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -86,7 +87,12 @@ class UsersScreen extends StatelessWidget {
                             itemCount: users.length,
                             itemBuilder: (context, index) {
                               final user = users[index];
-                              return _UserTile(user: user, rank: index + 1, accentColor: const Color(0xFF0066FF));
+                              return _UserTile(
+                                user: user,
+                                rank: index + 1,
+                                accentColor: const Color(0xFF0066FF),
+                                onTap: () => _showUserStatsDialog(context, user.username), // ADDED ONTAP
+                              );
                             },
                           ),
                         ),
@@ -170,7 +176,7 @@ class UsersScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFF0066FF).withOpacity(0.1), width: 2),
                 ),
-                child: Lottie.asset("assets/lottie/empty.json", fit: BoxFit.contain),
+                child: Lottie.asset("assets/lottie/intro2.json", fit: BoxFit.contain),
               ),
               const SizedBox(height: 24),
               Text(
@@ -220,15 +226,30 @@ class UsersScreen extends StatelessWidget {
       },
     );
   }
+
+  // NEW METHOD: Show User Stats Dialog
+  void _showUserStatsDialog(BuildContext context, String userName) {
+    showDialog(
+      context: context,
+      builder: (context) => UserStatsDialog(userName: userName),
+      barrierColor: Colors.black.withOpacity(0.6),
+    );
+  }
 }
 
-// Modern User Tile with Reduced Height and More Elevation
+// Updated _UserTile with onTap parameter
 class _UserTile extends StatelessWidget {
   final User user;
   final int rank;
   final Color accentColor;
+  final VoidCallback onTap; // ADDED ONTAP CALLBACK
 
-  const _UserTile({required this.user, required this.rank, required this.accentColor});
+  const _UserTile({
+    required this.user,
+    required this.rank,
+    required this.accentColor,
+    required this.onTap, // ADDED REQUIRED ONTAP
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -252,9 +273,9 @@ class _UserTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            // Navigate to user profile
-          },
+          onTap: onTap, // USE THE ONTAP CALLBACK
+          splashColor: accentColor.withOpacity(0.1),
+          highlightColor: accentColor.withOpacity(0.05),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
@@ -336,8 +357,16 @@ class _UserTile extends StatelessWidget {
 
                 const SizedBox(width: 8),
 
-                // Chevron
-                Icon(Icons.arrow_forward_ios_rounded, color: const Color(0xFF5A6C8A).withOpacity(0.5), size: 14),
+                // Stats Icon (NEW: Replaced chevron with stats icon)
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: accentColor.withOpacity(0.2), width: 1),
+                  ),
+                  child: Icon(Icons.bar_chart_rounded, color: accentColor, size: 16),
+                ),
               ],
             ),
           ),

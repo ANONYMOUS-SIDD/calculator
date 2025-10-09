@@ -146,23 +146,60 @@ class MarriageScreen extends StatelessWidget {
     );
   }
 
+  // 🎯 CORRECTED HISTORY SAVING LOGIC 🎯
   void _saveCurrentGameToHistory() {
-    // 1. Check if the score calculation has been run.
-    final bool calculationRun = playerController.players.any((player) => player.currentScore != 0.0);
+    // 1. Use the list containing the final, calculated results
+    final List<CalculatedResult> calculatedResults = playerController.calculatedResults;
 
-    // Only save if there are players AND a calculation has been performed.
-    if (playerController.players.isEmpty || !calculationRun) {
-      print('INFO: Skipped saving history. Game not fully calculated.');
+    // Check if a calculation has been performed. This is the most reliable check.
+    if (calculatedResults.isEmpty) {
+      print('INFO: Skipped saving history. No calculated results found.');
+      // If there are players but no result, it means they set up but didn't calculate.
+      if (playerController.players.isNotEmpty) {
+        ScaffoldMessenger.of(Get.context!).showSnackBar(SnackBar(content: Text('Game not calculated. History not saved.'), duration: Duration(seconds: 2), backgroundColor: Colors.orange));
+      }
       return;
     }
 
+    // Helper function to convert enum to clean string
+    String _getModeString(dynamic mode) {
+      // Assuming PlayerMode is available and used in PlayerController
+      // We will rely on checking the mode's toString() result for safety
+      final modeString = mode.toString().toLowerCase();
+      if (modeString.endsWith('.blind')) return 'Blind';
+      if (modeString.endsWith('.seen')) return 'Seen';
+      if (modeString.endsWith('.win')) return 'Win';
+      return modeString; // Fallback
+    }
+
     try {
-      // Convert current players to MarriagePlayerHistory
-      final List<MarriagePlayerHistory> playerHistories = playerController.players.map((player) {
-        return MarriagePlayerHistory(userId: player.userId, userName: player.userName, userImage: player.userImage, maalPoints: player.maalPoints, isSequence: player.isSequence, isDoublee: player.isDoublee, pointsEarned: player.pointsEarned, currentScore: player.currentScore, mode: player.mode.toString());
+      // 2. Map over the calculatedResults list to get final net values
+      final List<MarriagePlayerHistory> playerHistories = calculatedResults.map((result) {
+        final player = result.player;
+
+        // Calculate the final monetary value from the net points
+        final double netAmount = result.netPoints * playerController.pointsPerRupee.value;
+
+        return MarriagePlayerHistory(
+          userId: player.userId,
+          userName: player.userName,
+          userImage: player.userImage,
+
+          // Raw Data (Saved for context/re-verification)
+          maalPoints: player.maalPoints,
+          isSequence: player.isSequence,
+          isDoublee: player.isDoublee,
+          pointsEarned: player.pointsEarned, // Raw points
+          currentScore: player.currentScore, // Raw score (usually same as pointsEarned)
+          mode: _getModeString(player.mode),
+
+          // ✅ NEW: Final Calculated Data from CalculatedResult
+          netPointsChange: result.netPoints, // The final net gain/loss in points
+          netAmountChange: netAmount, // The final monetary gain/loss in Rupees
+        );
       }).toList();
 
-      // Calculate total maal points
+      // Calculate total maal points from the raw player data (used for the total game history object)
       final totalMaalPoints = playerController.players.fold(0.0, (sum, player) => sum + player.maalPoints);
 
       // Save to history
@@ -171,7 +208,7 @@ class MarriageScreen extends StatelessWidget {
       // Show success message
       ScaffoldMessenger.of(Get.context!).showSnackBar(SnackBar(content: Text('Game saved to history'), duration: Duration(seconds: 2), backgroundColor: Colors.green));
 
-      print('✅ Marriage game saved to history');
+      print('✅ Marriage game saved to history (including calculated net results)');
     } catch (e) {
       print('❌ Error saving marriage game: $e');
       // Optional: Show error message
@@ -196,6 +233,7 @@ class MarriageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ... (rest of the build method remains the same)
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -268,6 +306,7 @@ class MarriageScreen extends StatelessWidget {
     );
   }
 
+  // ... (rest of the helper functions: _buildResponsiveButtons, _buildNewGameButton, _buildCalculateButton)
   Widget _buildResponsiveButtons(double buttonHeight, double fontSize, double iconSize, double screenWidth) {
     // For very small screens, stack buttons vertically
     if (screenWidth < 350) {
