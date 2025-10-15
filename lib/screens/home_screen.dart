@@ -265,6 +265,7 @@ class _ModernGridItemWithFeedbackState extends State<_ModernGridItemWithFeedback
         return UsersScreen(tag: label, color: color, iconData: iconData);
       case "Rules":
         return RulesScreen(tag: label, color: color, iconData: iconData);
+      //return RulesScreen();
       case "Settings":
         return SettingsScreen(tag: label, color: color, iconData: iconData);
       default:
