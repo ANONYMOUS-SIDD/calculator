@@ -1,8 +1,7 @@
-// lib/main.dart (Updated - Preserves History)
-
 // Required for PlayerController setup
 import 'package:calculators/controllers/player_controller.dart';
-// ADD THESE IMPORTS
+// NEW IMPORT FOR THE CONTROLLER THAT WAS CAUSING THE ERROR
+import 'package:calculators/controllers/user_list_controller.dart';
 import 'package:calculators/model/game_history_models.dart';
 import 'package:calculators/model/user_model.dart';
 import 'package:calculators/repositories/history_repository.dart';
@@ -64,8 +63,8 @@ class AppInitializationWidget extends StatelessWidget {
       // 3. Open the critical boxes - ADD THE NEW BOXES
       await Hive.openBox<User>('usersBox');
       await Hive.openBox('callBreakGames');
-      await Hive.openBox<CallBreakGameHistory>('callBreakGameHistory'); // ADD THIS
-      await Hive.openBox<PlayerOverallStats>('playerStats'); // ADD THIS
+      await Hive.openBox<CallBreakGameHistory>('callBreakGameHistory');
+      await Hive.openBox<PlayerOverallStats>('playerStats');
       await Hive.openBox<MarriageGameHistory>('marriageGameHistory');
 
       // 4. INITIALIZE HISTORY REPOSITORY - ADD THIS LINE
@@ -83,6 +82,10 @@ class AppInitializationWidget extends StatelessWidget {
 
       // Initialize the PlayerController
       Get.put(PlayerController());
+
+      // 🔑 FIX: INITIALIZE THE USER LIST CONTROLLER HERE
+      // This ensures it is available via Get.find() anywhere in the app, including HomeScreen's initState.
+      Get.put(UserListController());
     } catch (e) {
       debugPrint('CRITICAL ERROR during initialization: $e');
       // If there's still an error, try one more time with clean data
@@ -92,8 +95,6 @@ class AppInitializationWidget extends StatelessWidget {
 
   // Smart data migration - only clears data if there's a schema conflict
   Future<void> _handleDataMigration() async {
-    // Add this in initState() during development only
-
     try {
       // Try to open boxes normally first
       await Hive.openBox<CallBreakGameHistory>('callBreakGameHistory');
@@ -139,9 +140,9 @@ class AppInitializationWidget extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
                     const SizedBox(height: 20),
-                    Text(
+                    const Text(
                       'App failed to load',
                       style: TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
                     ),
@@ -160,7 +161,7 @@ class AppInitializationWidget extends StatelessWidget {
                         // Restart the app
                         runApp(const AppInitializationWidget());
                       },
-                      child: Text('Retry'),
+                      child: const Text('Retry'),
                     ),
                   ],
                 ),

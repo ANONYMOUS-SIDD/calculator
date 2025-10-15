@@ -559,7 +559,7 @@ class _CleanUserTile extends StatelessWidget {
           color: const Color(0xFF667EEA),
           icon: Icons.person,
           text: rank.toString(),
-          gradient: const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]),
+          gradient: const LinearGradient(colors: [Colors.pink, Colors.orange]),
         );
     }
   }
