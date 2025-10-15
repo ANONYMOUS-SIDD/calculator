@@ -2,15 +2,24 @@
 
 import 'dart:io';
 
+import 'package:calculators/model/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AddUserDialog extends StatefulWidget {
   final Function(String username, String? imagePath) onUserAdded;
+  final User? userToEdit; // Add this for edit mode
+  final Function(String username, String? imagePath)? onUserUpdated; // Add this for edit mode
 
-  const AddUserDialog({super.key, required this.onUserAdded});
+  const AddUserDialog({
+    super.key,
+    required this.onUserAdded,
+    this.userToEdit, // Optional parameter for edit mode
+    this.onUserUpdated, // Optional parameter for edit mode
+  });
 
   @override
   State<AddUserDialog> createState() => _AddUserDialogState();
@@ -20,6 +29,77 @@ class _AddUserDialogState extends State<AddUserDialog> {
   final TextEditingController _usernameController = TextEditingController();
   String? _pickedImagePath;
   final ImagePicker _picker = ImagePicker();
+  String? _errorText;
+  bool _hasInteractedWithName = false;
+  bool _isInputFocused = false;
+
+  // Add this to track if we're in edit mode
+  bool get _isEditMode => widget.userToEdit != null;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // If we're in edit mode, pre-fill the data
+    if (_isEditMode) {
+      _usernameController.text = widget.userToEdit!.username;
+      _pickedImagePath = widget.userToEdit!.profileImagePath;
+    }
+  }
+
+  // Validation methods - updated for edit mode
+  String? _validateUsername(String value) {
+    final trimmedValue = value.trim();
+
+    if (trimmedValue.isEmpty) {
+      return 'Please enter a username';
+    }
+
+    if (trimmedValue.length < 3) {
+      return 'Username must be at least 3 characters';
+    }
+
+    if (trimmedValue.length > 10) {
+      return 'Username must not exceed 10 characters';
+    }
+
+    // Check if username already exists (excluding current user in edit mode)
+    if (_isUsernameExists(trimmedValue)) {
+      return 'Username already exists';
+    }
+
+    return null;
+  }
+
+  bool _isUsernameExists(String username) {
+    final userBox = Hive.box<User>('usersBox');
+    final users = userBox.values.toList().cast<User>();
+
+    if (_isEditMode) {
+      // In edit mode, exclude the current user from the duplicate check
+      return users.any((user) => user.username.toLowerCase() == username.toLowerCase() && user.username != widget.userToEdit!.username);
+    } else {
+      // In create mode, check all users
+      return users.any((user) => user.username.toLowerCase() == username.toLowerCase());
+    }
+  }
+
+  String _capitalizeFirstLetter(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
+  }
+
+  void _onUsernameChanged(String value) {
+    setState(() {
+      _hasInteractedWithName = true;
+      _errorText = _validateUsername(value);
+    });
+  }
+
+  bool get _isFormValid {
+    final username = _usernameController.text.trim();
+    return username.isNotEmpty && username.length >= 3 && username.length <= 10 && !_isUsernameExists(username) && _pickedImagePath != null;
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     if (source == ImageSource.camera) {
@@ -90,66 +170,93 @@ class _AddUserDialogState extends State<AddUserDialog> {
     );
   }
 
+  void _saveUser() {
+    final username = _usernameController.text.trim();
+    final validationError = _validateUsername(username);
+
+    if (validationError != null || _pickedImagePath == null) {
+      setState(() {
+        _errorText = validationError;
+        _hasInteractedWithName = true;
+      });
+      return;
+    }
+
+    // Capitalize the username before saving
+    final capitalizedUsername = _capitalizeFirstLetter(username);
+
+    if (_isEditMode) {
+      // Call update callback for edit mode
+      widget.onUserUpdated?.call(capitalizedUsername, _pickedImagePath);
+    } else {
+      // Call add callback for create mode
+      widget.onUserAdded(capitalizedUsername, _pickedImagePath);
+    }
+
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
+        constraints: const BoxConstraints(maxWidth: 300),
         decoration: BoxDecoration(
           color: const Color(0xFFF8FAFF),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white, width: 3),
-          boxShadow: [BoxShadow(color: const Color(0xFF0066FF).withOpacity(0.12), blurRadius: 30, spreadRadius: 1, offset: const Offset(0, 8))],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [BoxShadow(color: const Color(0xFF0066FF).withOpacity(0.12), blurRadius: 25, spreadRadius: 1, offset: const Offset(0, 6))],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header with profile picture
+              // Compact Header - Updated title based on mode
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFE1E8F5), width: 1.5),
                 ),
                 child: Column(
                   children: [
-                    // Fixed Profile Picture Section - Image will display no matter what
+                    // Profile Picture
                     Stack(
                       alignment: Alignment.center,
                       children: [
                         Container(
-                          width: 64,
-                          height: 64,
+                          width: 70,
+                          height: 70,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
-                            border: Border.all(color: const Color(0xFFE1E8F5), width: 2),
-                            boxShadow: [BoxShadow(color: const Color(0xFF0066FF).withOpacity(0.1), blurRadius: 12, offset: const Offset(0, 4))],
+                            border: Border.all(color: _pickedImagePath == null ? const Color(0xFFFF6B35).withOpacity(0.3) : const Color(0xFF00B8FF), width: _pickedImagePath == null ? 2 : 2.5),
+                            boxShadow: [BoxShadow(color: const Color(0xFF0066FF).withOpacity(_pickedImagePath == null ? 0.1 : 0.2), blurRadius: 10, offset: const Offset(0, 3))],
                           ),
                           child: ClipOval(child: _buildProfileImage()),
                         ),
 
-                        // Add/Change Photo Button
+                        // Add/Change Button
                         Positioned(
-                          bottom: -2,
-                          right: -2,
+                          bottom: -1,
+                          right: -1,
                           child: GestureDetector(
                             onTap: _showImageSourceSheet,
                             child: Container(
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0066FF),
+                                color: _pickedImagePath == null ? const Color(0xFFFF6B35) : const Color(0xFF0066FF),
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white, width: 2),
                                 boxShadow: [BoxShadow(color: const Color(0xFF0066FF).withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))],
                               ),
-                              child: Icon(_pickedImagePath != null ? Icons.edit : Icons.add, size: 12, color: Colors.white),
+                              child: Icon(_pickedImagePath != null ? Icons.edit_rounded : Icons.add_a_photo_rounded, size: 12, color: Colors.white),
                             ),
                           ),
                         ),
@@ -158,56 +265,115 @@ class _AddUserDialogState extends State<AddUserDialog> {
 
                     const SizedBox(height: 12),
 
+                    // Updated title based on mode
                     Text(
-                      'Create Player',
-                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B)),
+                      _isEditMode ? 'Edit Player' : 'Create Player',
+                      style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B)),
                     ),
 
                     const SizedBox(height: 2),
 
-                    Text('Add name and profile picture', style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF5A6C8A))),
-                  ],
-                ),
-              ),
+                    Text(
+                      _isEditMode ? 'Update profile picture' : 'Add name and profile picture', // Updated subtitle
+                      style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF5A6C8A), fontWeight: FontWeight.w500),
+                    ),
 
-              const SizedBox(height: 16),
-
-              // Input Section
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE1E8F5), width: 1.5),
-                ),
-                child: Column(
-                  children: [
-                    // Name Input
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFF),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE1E8F5)),
-                      ),
-                      child: TextField(
-                        controller: _usernameController,
-                        style: GoogleFonts.poppins(color: const Color(0xFF1A1D2B), fontWeight: FontWeight.w500, fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: 'Enter player name',
-                          hintStyle: GoogleFonts.poppins(color: const Color(0xFF5A6C8A), fontSize: 13),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          border: InputBorder.none,
-                          prefixIcon: Icon(Icons.person_outline, color: const Color(0xFF0066FF), size: 18),
+                    if (_pickedImagePath == null) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFFFF6B35).withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                        child: Text(
+                          'Profile picture required',
+                          style: GoogleFonts.poppins(fontSize: 9, color: const Color(0xFFFF6B35), fontWeight: FontWeight.w600),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Action Buttons - Cancel and Create
+              // iOS-style Input Field with Floating Label - Disabled in edit mode
+              Focus(
+                onFocusChange: (hasFocus) {
+                  if (!_isEditMode) {
+                    // Only allow focus in create mode
+                    setState(() {
+                      _isInputFocused = hasFocus;
+                    });
+                  }
+                },
+                child: AbsorbPointer(
+                  absorbing: _isEditMode, // Disable interaction in edit mode
+                  child: TextField(
+                    controller: _usernameController,
+                    enabled: !_isEditMode, // Disable text field in edit mode
+                    style: GoogleFonts.poppins(
+                      color: _isEditMode ? const Color(0xFF5A6C8A).withOpacity(0.6) : const Color(0xFF1A1D2B), // Gray out text in edit mode
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Username',
+                      labelStyle: GoogleFonts.poppins(color: _isEditMode ? const Color(0xFF5A6C8A).withOpacity(0.5) : (_isInputFocused ? const Color(0xFF0066FF) : const Color(0xFF5A6C8A).withOpacity(0.7)), fontSize: _isInputFocused || _usernameController.text.isNotEmpty ? 12 : 15, fontWeight: FontWeight.w500),
+                      floatingLabelBehavior: FloatingLabelBehavior.auto,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: _isEditMode ? const Color(0xFFE1E8F5).withOpacity(0.5) : const Color(0xFFE1E8F5), width: 1.0),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: _isEditMode ? const Color(0xFFE1E8F5).withOpacity(0.5) : (_errorText != null && _hasInteractedWithName ? Colors.red : const Color(0xFFE1E8F5)), width: 1.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: _isEditMode ? const Color(0xFFE1E8F5).withOpacity(0.5) : const Color(0xFF0066FF), width: 1.5),
+                      ),
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 12, right: 8),
+                        child: Icon(Icons.person_outline_rounded, size: 20, color: _isEditMode ? const Color(0xFF5A6C8A).withOpacity(0.4) : (_isInputFocused ? const Color(0xFF0066FF) : const Color(0xFF5A6C8A).withOpacity(0.6))),
+                      ),
+                      filled: true,
+                      fillColor: _isEditMode ? const Color(0xFFF8FAFF) : Colors.white, // Different background in edit mode
+                      errorText: _hasInteractedWithName ? _errorText : null,
+                      errorStyle: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.red),
+                      hintText: _isEditMode ? 'Username cannot be changed' : null, // Show hint in edit mode
+                      hintStyle: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF5A6C8A).withOpacity(0.5), fontStyle: FontStyle.italic),
+                    ),
+                    onChanged: _isEditMode ? null : _onUsernameChanged, // No validation in edit mode
+                    textCapitalization: TextCapitalization.words,
+                    maxLength: 10,
+                    buildCounter: (BuildContext context, {required int currentLength, required int? maxLength, required bool isFocused}) => null,
+                  ),
+                ),
+              ),
+
+              // Info text for edit mode
+              if (_isEditMode) ...[
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, size: 12, color: const Color(0xFF5A6C8A).withOpacity(0.6)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Username cannot be changed',
+                          style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF5A6C8A).withOpacity(0.7), fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+
+              // Action Buttons - Updated button text based on mode
               Row(
                 children: [
                   Expanded(
@@ -219,11 +385,11 @@ class _AddUserDialogState extends State<AddUserDialog> {
                           foregroundColor: const Color(0xFF5A6C8A),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(color: const Color(0xFFE1E8F5), width: 1.5),
+                            side: const BorderSide(color: Color(0xFFE1E8F5), width: 1.5),
                           ),
                           backgroundColor: Colors.white,
                         ),
-                        child: Text('Cancel', style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 13)),
+                        child: Text('Cancel', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
                       ),
                     ),
                   ),
@@ -233,27 +399,30 @@ class _AddUserDialogState extends State<AddUserDialog> {
                       height: 44,
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF0066FF), Color(0xFF00B8FF)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                          gradient: _isFormValid ? const LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)], begin: Alignment.topLeft, end: Alignment.bottomRight) : LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade500], begin: Alignment.topLeft, end: Alignment.bottomRight),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF0066FF).withOpacity(0.3), width: 1.5),
-                          boxShadow: [BoxShadow(color: const Color(0xFF0066FF).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))],
+                          border: Border.all(color: _isFormValid ? const Color(0xFFFF6B35).withOpacity(0.3) : Colors.grey.shade400, width: 1.5),
+                          boxShadow: _isFormValid ? [BoxShadow(color: const Color(0xFFFF6B35).withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))] : [],
                         ),
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_usernameController.text.trim().isNotEmpty) {
-                              widget.onUserAdded(_usernameController.text.trim(), _pickedImagePath);
-                              Navigator.pop(context);
-                            }
-                          },
+                          onPressed: _isFormValid ? _saveUser : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             elevation: 0,
+                            disabledBackgroundColor: Colors.grey.shade300,
                           ),
-                          child: Text(
-                            'Create',
-                            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(_isEditMode ? Icons.save_rounded : Icons.person_add_alt_1_rounded, size: 15, color: _isFormValid ? Colors.white : Colors.grey.shade600),
+                              const SizedBox(width: 5),
+                              Text(
+                                _isEditMode ? 'Update' : 'Create', // Updated button text
+                                style: GoogleFonts.poppins(color: _isFormValid ? Colors.white : Colors.grey.shade600, fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -268,27 +437,26 @@ class _AddUserDialogState extends State<AddUserDialog> {
     );
   }
 
-  // Fixed image display method - will display image no matter what
+  // Fixed image display method
   Widget _buildProfileImage() {
     if (_pickedImagePath == null) {
       return Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(colors: [const Color(0xFF0066FF).withOpacity(0.08), const Color(0xFF00B8FF).withOpacity(0.04)]),
+          gradient: LinearGradient(colors: [const Color(0xFFFF6B35).withOpacity(0.1), const Color(0xFFFF8C42).withOpacity(0.05)]),
         ),
-        child: Icon(Icons.person, size: 28, color: const Color(0xFF0066FF).withOpacity(0.5)),
+        child: Icon(Icons.person_rounded, size: 28, color: const Color(0xFFFF6B35).withOpacity(0.4)),
       );
     }
 
     try {
-      // Try to load the image file
       final file = File(_pickedImagePath!);
       if (file.existsSync()) {
         return Image.file(
           file,
           fit: BoxFit.cover,
-          width: 64,
-          height: 64,
+          width: 70,
+          height: 70,
           errorBuilder: (context, error, stackTrace) {
             return _buildErrorImage();
           },
@@ -318,7 +486,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
   }
 }
 
-// Image Option Widget
+// Image Option Widget remains the same...
 class _ImageOption extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -337,15 +505,15 @@ class _ImageOption extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(color: const Color(0xFF0066FF).withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-              child: Icon(icon, size: 16, color: const Color(0xFF0066FF)),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(color: const Color(0xFF0066FF).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, size: 18, color: const Color(0xFF0066FF)),
             ),
             const SizedBox(height: 6),
             Text(
               label,
-              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: const Color(0xFF1A1D2B)),
+              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF1A1D2B)),
             ),
           ],
         ),

@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -118,28 +117,79 @@ class _ModernGameSetupState extends State<ModernGameSetup> {
   void _confirmPlayerChange(int newCount) {
     if (newCount == widget.selectedPlayers) return;
 
-    showCupertinoDialog(
+    showDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        // REVERTED TEXT COLOR TO BE WHITE/DEFAULT TO MATCH ORIGINAL INFERRED INTENT (using the original logic's color settings)
-        title: Text('Change Player Number', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-        content: Text('Are You Sure Want To Change The Players Number? This will reset the current player selection.', style: GoogleFonts.inter()),
-        actions: <CupertinoDialogAction>[
-          CupertinoDialogAction(
-            child: Text('Cancel', style: GoogleFonts.inter(color: CupertinoColors.systemGrey)),
-            onPressed: () => Navigator.pop(context),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            child: Text('Change', style: GoogleFonts.inter(color: CupertinoColors.systemRed)),
-            onPressed: () {
-              widget.onPlayersChanged(newCount);
-              // Expand the section when player count changes to allow new selection
-              _isExpanded.value = true;
-              Navigator.pop(context);
-            },
-          ),
-        ],
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.0)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Content Section
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
+                  Text(
+                    'Change  Player  Number',
+                    style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.black),
+                  ),
+                  const SizedBox(height: 5),
+                  // Message
+                  Text(
+                    'Are you sure you want to change the number of players',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black87),
+                  ),
+                ],
+              ),
+            ),
+
+            // Actions Section - Exact same as your design
+            Column(
+              children: [
+                const Divider(color: Colors.black12, height: 1.0, thickness: 0.8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Cancel Button
+                    Expanded(
+                      child: TextButton(
+                        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 11), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.quicksand(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.blue.shade700),
+                        ),
+                      ),
+                    ),
+
+                    // Vertical Divider
+                    Container(height: 45, width: 0.8, color: Colors.black12),
+
+                    // Change Button
+                    Expanded(
+                      child: TextButton(
+                        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 11), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
+                        onPressed: () {
+                          widget.onPlayersChanged(newCount);
+                          _isExpanded.value = true;
+                          Navigator.pop(context);
+                        },
+                        child: Text(
+                          'Change',
+                          style: GoogleFonts.quicksand(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.red.shade700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -191,10 +191,9 @@ class CallBreakController extends GetxController {
 
       // --- CUSTOM CONTENT SECTION ---
       content: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        //mainAxisSize: MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. Title (Top padding removed by adjusting the bottom value)
+          // 1. Title (Top padding set for spacing)
           Padding(
             padding: const EdgeInsets.only(top: 0, bottom: 5.0, left: 15.0, right: 15.0),
             child: Text(
@@ -214,15 +213,23 @@ class CallBreakController extends GetxController {
                     child: Text(
                       "The current game progress will be saved before starting a new game.",
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.red.shade600, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.poppins(
+                        fontSize: 13, // Slightly increased from 12
+                        fontWeight: FontWeight.w500, // Made bolder (was w500)
+                        color: Colors.red, // Darker for better readability
+                      ),
                     ),
                   ),
                 Padding(
                   padding: EdgeInsets.only(bottom: requiresConfirmation ? 15.0 : 10.0),
                   child: Text(
-                    "New Player: Fresh New Game\nOld Player: Keep Existing Player",
+                    "Old Player to keep existing player and new player for fresh new start",
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                    style: GoogleFonts.poppins(
+                      fontSize: 13, // Slightly increased from 12
+                      fontWeight: FontWeight.w500, // Made bolder (was w500)
+                      color: Colors.black87, // Darker for better readability
+                    ),
                   ),
                 ),
               ],
@@ -231,7 +238,7 @@ class CallBreakController extends GetxController {
         ],
       ),
 
-      // --- CUSTOM ACTIONS SECTION (Single Row with PERFECTLY JOINED Dividers) ---
+      // --- CUSTOM ACTIONS SECTION (Single Row with Divider) ---
       actions: [
         // Top Divider (separates content from actions)
         Column(
@@ -244,29 +251,29 @@ class CallBreakController extends GetxController {
                 // 1. New Player Action (Left Button - Destructive)
                 Expanded(
                   child: TextButton(
-                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 5), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 11), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
                     onPressed: () {
                       Get.back();
                       resetGameFresh();
                     },
                     child: Text(
                       "New Player",
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.red.shade600),
+                      style: GoogleFonts.quicksand(
+                        fontWeight: FontWeight.w900, // Bolder (was w600)
+                        fontSize: 16, // Larger (was 15)
+                        color: Colors.red.shade700, // Better red shade
+                      ),
                     ),
                   ),
                 ),
 
-                // Vertical Divider (Joins perfectly with the horizontal divider above)
-                Container(
-                  height: 40, // Match button height visually
-                  width: 0.8,
-                  color: Colors.black12,
-                ),
+                // Vertical Divider
+                Container(height: 45, width: 0.8, color: Colors.black12),
 
                 // 2. Old Player Action (Right Button)
                 Expanded(
                   child: TextButton(
-                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 5), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 11), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
                     onPressed: () {
                       if (rounds.isNotEmpty) saveGameHistory();
                       Get.back();
@@ -274,7 +281,11 @@ class CallBreakController extends GetxController {
                     },
                     child: Text(
                       "Old Player",
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.blue),
+                      style: GoogleFonts.quicksand(
+                        fontWeight: FontWeight.w900, // Bolder (was w600)
+                        fontSize: 16, // Larger (was 15)
+                        color: Colors.blue.shade700, // Better blue shade
+                      ),
                     ),
                   ),
                 ),

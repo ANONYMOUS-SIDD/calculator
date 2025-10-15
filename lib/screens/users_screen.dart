@@ -168,8 +168,7 @@ class _UsersScreenState extends State<UsersScreen> {
                             itemCount: sortedUsers.length,
                             itemBuilder: (context, index) {
                               final user = sortedUsers[index];
-                              // CORRECT: Calling the external widget class constructor directly
-                              return _CleanUserTile(user: user, rank: index + 1, isTablet: isTablet, isSmall: isSmall);
+                              return _CleanUserTile(user: user, rank: index + 1, isTablet: isTablet, isSmall: isSmall, onEdit: () => _showEditUserDialog(context, user));
                             },
                           ),
                         ),
@@ -199,7 +198,22 @@ class _UsersScreenState extends State<UsersScreen> {
               onPressed: () => _showAddUserDialog(context),
               backgroundColor: Colors.transparent,
               elevation: 0,
-              child: Icon(Icons.add, size: isTablet ? 28 : 26, color: Colors.white),
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  boxShadow: [
+                    // iOS-like glow effect
+                    BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.5), blurRadius: 20, spreadRadius: 3, offset: const Offset(0, 8)),
+                    // Subtle shadow for depth
+                    BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4)),
+                  ],
+                  border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+                ),
+                child: const Icon(Icons.supervisor_account_rounded, color: Colors.white, size: 28),
+              ),
             ),
           );
         },
@@ -290,8 +304,7 @@ class _UsersScreenState extends State<UsersScreen> {
         borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
         // Shadows are now handled by _CleanUserTile itself
       ),
-      // CORRECT: Calling the external widget class constructor directly
-      child: _CleanUserTile(user: user, rank: rank, isTablet: isTablet, isSmall: isSmall),
+      child: _CleanUserTile(user: user, rank: rank, isTablet: isTablet, isSmall: isSmall, onEdit: () => _showEditUserDialog(context, user)),
     );
   }
 
@@ -391,6 +404,120 @@ class _UsersScreenState extends State<UsersScreen> {
       },
     );
   }
+
+  // NEW METHOD: Handle user editing with reference updates
+  void _showEditUserDialog(BuildContext context, User user) {
+    final UserListController controller = Get.find<UserListController>();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddUserDialog(
+          userToEdit: user, // Pass the user to edit
+          onUserAdded: (username, imagePath) {
+            // This won't be called in edit mode
+          },
+          onUserUpdated: (username, imagePath) {
+            // Store the old username before updating
+            final String oldUsername = user.username;
+
+            // Update the user in Hive
+            final userBox = Hive.box<User>('usersBox');
+            final userIndex = userBox.values.toList().indexWhere((u) => u.username == oldUsername);
+            if (userIndex != -1) {
+              final updatedUser = User(
+                username: username,
+                profileImagePath: imagePath,
+                wins: user.wins, // Keep existing wins
+                rank: user.rank, // Keep existing rank
+              );
+              userBox.putAt(userIndex, updatedUser);
+
+              // Update user stats with new username if username changed
+              if (oldUsername != username) {
+                _updateUserStatsReferences(oldUsername, username, controller);
+              }
+
+              controller.refreshStats();
+            }
+          },
+        );
+      },
+    );
+  }
+
+  // NEW METHOD: Update all references when username changes
+  void _updateUserStatsReferences(String oldUsername, String newUsername, UserListController controller) {
+    // Update userStats in controller
+    if (controller.userStats.containsKey(oldUsername)) {
+      final userStat = controller.userStats[oldUsername];
+      controller.userStats[newUsername] = userStat!;
+      controller.userStats.remove(oldUsername);
+      controller.update(); // Notify listeners about the change
+    }
+
+    // Update Hive storage for game history (if you have one)
+    _updateGameHistoryReferences(oldUsername, newUsername);
+
+    // Update any other references you might have
+    _updateOtherReferences(oldUsername, newUsername);
+  }
+
+  // Update game history references
+  void _updateGameHistoryReferences(String oldUsername, String newUsername) {
+    try {
+      // If you have a game history box
+      final gameHistoryBox = Hive.box('gameHistory');
+      final gameHistory = gameHistoryBox.values.toList();
+
+      for (int i = 0; i < gameHistory.length; i++) {
+        final game = gameHistory[i];
+        // Update based on your game history structure
+        if (game is Map && game['playerName'] == oldUsername) {
+          game['playerName'] = newUsername;
+          gameHistoryBox.putAt(i, game);
+        }
+        // Add more conditions based on your data structure
+      }
+    } catch (e) {
+      print('Error updating game history: $e');
+    }
+  }
+
+  // Update any other references
+  void _updateOtherReferences(String oldUsername, String newUsername) {
+    try {
+      // Update achievements if you have them
+      final achievementsBox = Hive.box('achievements');
+      final achievements = achievementsBox.values.toList();
+
+      for (int i = 0; i < achievements.length; i++) {
+        final achievement = achievements[i];
+        if (achievement is Map && achievement['playerName'] == oldUsername) {
+          achievement['playerName'] = newUsername;
+          achievementsBox.putAt(i, achievement);
+        }
+      }
+    } catch (e) {
+      print('Error updating other references: $e');
+    }
+
+    try {
+      // Update sessions if you have them
+      final sessionsBox = Hive.box('sessions');
+      final sessions = sessionsBox.values.toList();
+
+      for (int i = 0; i < sessions.length; i++) {
+        final session = sessions[i];
+        if (session is Map && session['playerName'] == oldUsername) {
+          session['playerName'] = newUsername;
+          sessionsBox.putAt(i, session);
+        }
+      }
+    } catch (e) {
+      print('Error updating sessions: $e');
+    }
+  }
 }
 
 // --- REVISED _CleanUserTile: Shadow added directly here ---
@@ -399,8 +526,9 @@ class _CleanUserTile extends StatelessWidget {
   final int rank;
   final bool isTablet;
   final bool isSmall;
+  final VoidCallback? onEdit;
 
-  const _CleanUserTile({super.key, required this.user, required this.rank, required this.isTablet, required this.isSmall});
+  const _CleanUserTile({super.key, required this.user, required this.rank, required this.isTablet, required this.isSmall, this.onEdit});
 
   // Utility method to get RankConfig
   RankConfig _getRankConfig(int rank) {
@@ -499,6 +627,7 @@ class _CleanUserTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _showUserStatsDialog(context, user.username),
+          onLongPress: onEdit, // Add long press handler
           borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
           child: Padding(
             padding: EdgeInsets.all(isTablet ? 14 : 12),

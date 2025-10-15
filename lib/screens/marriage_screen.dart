@@ -62,7 +62,7 @@ class MarriageScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 0, bottom: 5.0, left: 15.0, right: 15.0),
             child: Text(
-              "Start New Game",
+              "Start  New  Game",
               style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.black),
             ),
           ),
@@ -75,9 +75,13 @@ class MarriageScreen extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.only(bottom: hasGameInProgress ? 15.0 : 10.0),
                   child: Text(
-                    "Do you want to start a  new game?",
+                    "Do you want to start a new game",
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                    style: GoogleFonts.poppins(
+                      fontSize: 13, // Slightly increased from 12
+                      fontWeight: FontWeight.w500, // Made bolder (was w500)
+                      color: Colors.black87, // Darker for better readability
+                    ),
                   ),
                 ),
               ],
@@ -105,10 +109,10 @@ class MarriageScreen extends StatelessWidget {
                     },
                     child: Text(
                       "Cancel",
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: Colors.blue, // Blue for the primary action
+                      style: GoogleFonts.quicksand(
+                        fontWeight: FontWeight.w900, // Bolder (was w600)
+                        fontSize: 16, // Larger (was 15)
+                        color: Colors.blue.shade700, // Better blue shade
                       ),
                     ),
                   ),
@@ -130,10 +134,10 @@ class MarriageScreen extends StatelessWidget {
                     },
                     child: Text(
                       "Confirm",
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: Colors.red.shade600, // Red for the action that causes data loss/reset
+                      style: GoogleFonts.quicksand(
+                        fontWeight: FontWeight.w900, // Bolder (was w600)
+                        fontSize: 16, // Larger (was 15)
+                        color: Colors.red.shade700, // Better red shade
                       ),
                     ),
                   ),
