@@ -14,6 +14,7 @@ import '../model/user_model.dart';
 import '../widgets/game_details_dialog.dart';
 import '../widgets/moder_app_bar.dart';
 
+/// Modern color palette for consistent UI theming
 class ModernColors {
   static const Color primaryBlue = Color(0xFF1E3C72);
   static const Color accentPurple = Color(0xFF2A5298);
@@ -24,6 +25,7 @@ class ModernColors {
   static const Color errorRed = Color(0xFFF44336);
 }
 
+/// Screen displaying game history for both Call Break and Marriage games
 class GameHistoryScreen extends StatefulWidget {
   final String tag;
   final Color color;
@@ -45,6 +47,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     _loadPlayers();
   }
 
+  /// Loads all players from the history repository
   void _loadPlayers() {
     _allPlayers = HistoryRepository.getAllPlayers();
   }
@@ -57,7 +60,6 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     return Scaffold(
       appBar: ModernAppBar(title: "Game History"),
       backgroundColor: const Color(0xFFF8FAFF),
-
       body: Container(
         color: Colors.white,
         child: Column(
@@ -72,7 +74,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // UPDATED: Game Type Selector with Icons and Deep Blue Gradient
+  /// Builds the game type selector (Call Break vs Marriage)
   Widget _buildGameTypeSelector(bool isSmallScreen) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: isSmallScreen ? 12 : 16, vertical: 8),
@@ -95,7 +97,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // UPDATED: Game Type Button with Icon and Deep Blue Gradient
+  /// Builds individual game type button with gradient styling
   Widget _buildGameTypeButton({required String title, required IconData icon, required bool isSelected, required VoidCallback onTap}) {
     return Container(
       height: 42,
@@ -126,7 +128,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // UPDATED: Top Players Section - Different for Call Break and Marriage
+  /// Builds the top players section showing top 3 performers
   Widget _buildTopPlayersSection() {
     final topPlayers = _selectedGameType == 0 ? _getTopCallBreakPlayers() : _getTopMarriagePlayers();
 
@@ -136,10 +138,10 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
       decoration: BoxDecoration(
-        gradient: _selectedGameType == 0 ? LinearGradient(colors: [Colors.white, Colors.blue.shade50, Colors.purple.shade50], begin: Alignment.topLeft, end: Alignment.bottomRight) : LinearGradient(colors: [Colors.white, Colors.blue.shade50, Colors.purple.shade50], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: LinearGradient(colors: [Colors.white, Colors.blue.shade50, Colors.purple.shade50], begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: (_selectedGameType == 0 ? Colors.blueAccent : Colors.blueAccent).withOpacity(0.15), blurRadius: 20, spreadRadius: 2, offset: const Offset(0, 8)),
+          BoxShadow(color: Colors.blueAccent.withOpacity(0.15), blurRadius: 20, spreadRadius: 2, offset: const Offset(0, 8)),
           BoxShadow(color: Colors.purple.withOpacity(0.1), blurRadius: 10, spreadRadius: 1, offset: const Offset(0, 4)),
         ],
         border: Border.all(color: Colors.grey.shade100, width: 2),
@@ -148,6 +150,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Builds individual top player item with rank styling
   Widget _buildTopPlayerItem(String playerName, int rank) {
     return Column(
       children: [
@@ -197,7 +200,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // Games List - Handles both Call Break and Marriage games
+  /// Builds the main games list based on selected game type
   Widget _buildGamesList() {
     if (_selectedGameType == 0) {
       final allGames = HistoryRepository.getAllCallBreakGames();
@@ -214,7 +217,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     }
   }
 
-  // Call Break Games List
+  /// Builds Call Break games list grouped by date
   Widget _buildCallBreakGamesList(List<CallBreakGameHistory> allGames) {
     final groupedGames = <String, List<CallBreakGameHistory>>{};
     for (final game in allGames) {
@@ -238,7 +241,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // Marriage Games List - UPDATED: Show most recent matches at top
+  /// Builds Marriage games list grouped by date
   Widget _buildMarriageGamesList(List<MarriageGameHistory> allGames) {
     final groupedGames = <String, List<MarriageGameHistory>>{};
     for (final game in allGames) {
@@ -257,13 +260,12 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
       itemBuilder: (context, index) {
         final dateKey = sortedDateKeys[index];
         final gamesForDate = groupedGames[dateKey]!;
-        // UPDATED: Remove .reversed() to show most recent first
         return _buildDateGroupContainer(dateKey, gamesForDate, _buildMarriageGameCard);
       },
     );
   }
 
-  // Generic Date Group Container - UPDATED: Remove .reversed() for marriage
+  /// Builds a date group container for organizing games by date
   Widget _buildDateGroupContainer<T>(String dateKey, List<T> games, Widget Function(T) buildGameCard) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -287,14 +289,13 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
               style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800, color: ModernColors.textDark),
             ),
           ),
-          // UPDATED: For marriage, show games in original order (most recent first)
           ...(_selectedGameType == 1 ? games : games.reversed).map((game) => buildGameCard(game)).toList(),
         ],
       ),
     );
   }
 
-  // Call Break Game Card
+  /// Builds individual Call Break game card
   Widget _buildCallBreakGameCard(CallBreakGameHistory game) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 350;
@@ -353,7 +354,6 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          // In _buildCallBreakGameCard method - For Call Break, we don't have modes, so keep as is or remove badges
                           Container(
                             width: isSmallScreen ? 36 : 40,
                             height: isSmallScreen ? 36 : 40,
@@ -384,7 +384,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // UPDATED: Marriage Game Card with same colors as Call Break
+  /// Builds individual Marriage game card
   Widget _buildMarriageGameCard(MarriageGameHistory game) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 350;
@@ -405,11 +405,9 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // UPDATED: Date, Maal/Points, and Time in single row with matching heights
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Date Container - Original Size
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
@@ -449,10 +447,8 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                       ],
                     ),
                   ),
-
-                  // Maal & Points Container - Matching height, integer values
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), // Same vertical padding as date/time
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -463,8 +459,6 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Maal Section in row
-                        // In _buildMarriageGameCard method, update the Maal section:
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -474,13 +468,11 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${_calculateTotalPoints(game).toInt()}', // Show total points instead of 0
+                              '${_calculateTotalPoints(game).toInt()}',
                               style: GoogleFonts.poppins(fontSize: isSmallScreen ? 9 : 10, fontWeight: FontWeight.w800, color: Colors.purple.shade900),
                             ),
                           ],
                         ),
-
-                        // Vertical Divider
                         Container(
                           width: 1,
                           height: 16,
@@ -489,8 +481,6 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                             gradient: LinearGradient(colors: [Colors.transparent, Colors.blueAccent, Colors.transparent], begin: Alignment.topCenter, end: Alignment.bottomCenter),
                           ),
                         ),
-
-                        // Points Section in row
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -500,7 +490,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${game.pointsPerRupee.toInt()}', // Convert to integer
+                              '${game.pointsPerRupee.toInt()}',
                               style: GoogleFonts.poppins(fontSize: isSmallScreen ? 9 : 10, fontWeight: FontWeight.w800, color: Colors.purple.shade900),
                             ),
                           ],
@@ -508,8 +498,6 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                       ],
                     ),
                   ),
-
-                  // Time Container - Original Size
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                     decoration: BoxDecoration(
@@ -534,8 +522,6 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-
-              // Players Section - UPDATED: Same colors as Call Break
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                 decoration: BoxDecoration(
@@ -572,8 +558,6 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          // In _buildMarriageGameCard method, update the avatar part:
-                          // In _buildMarriageGameCard method, update the avatar part:
                           Container(
                             width: isSmallScreen ? 36 : 40,
                             height: isSmallScreen ? 36 : 40,
@@ -581,10 +565,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                               shape: BoxShape.circle,
                               border: Border.all(color: _getRankBorderColor(rank), width: 1.5),
                             ),
-                            child: _buildPlayerAvatar(
-                              player.userName,
-                              showWinBadge: _isWinMode(player.mode), // NEW CODE - ADD THIS
-                            ),
+                            child: _buildPlayerAvatar(player.userName, showWinBadge: _isWinMode(player.mode)),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -607,14 +588,12 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // Add this helper method to check if player was in win mode
-  // Add this helper method to check if player was in win mode
+  /// Checks if player was in win mode
   bool _isWinMode(String mode) {
-    // Handle different possible string representations of the win mode
     return mode.toLowerCase().contains('win');
   }
 
-  // Add this method to calculate total points for marriage game
+  /// Calculates total points for marriage game including win bonuses
   double _calculateTotalPoints(MarriageGameHistory game) {
     double totalPoints = 0.0;
 
@@ -623,28 +602,21 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
       final isWinPlayer = player.mode?.toString().toLowerCase().contains('win') ?? false;
 
       if (isWinPlayer) {
-        print('✅ WIN PLAYER DETECTED: ${player.userName}');
-
-        // Simple logic: Doublee = 5 points, otherwise Sequence = 3 points
         if (player.isDoublee == true) {
           playerPoints += 5;
-          print('➕ Added 5 points for Doublee mode');
         } else {
           playerPoints += 3;
-          print('➕ Added 3 points for Sequence mode');
         }
       }
 
-      print('🎯 Final points for ${player.userName}: $playerPoints');
       totalPoints += playerPoints;
     }
 
     return totalPoints;
   }
 
-  // Marriage Game Details Dialog
+  /// Shows detailed dialog for marriage game
   void _showMarriageGameDetails(MarriageGameHistory game) {
-    // Calculate total match points from history
     final double totalMatchPoints = game.players.fold(0.0, (sum, player) {
       final isWinPlayer = player.mode.toLowerCase().contains('win');
       if (isWinPlayer) {
@@ -681,10 +653,8 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header with Game icon, date in center, and close icon
                   Row(
                     children: [
-                      // Game icon container
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
@@ -695,27 +665,15 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                         ),
                         child: Icon(Icons.sports_esports_rounded, color: Colors.purple.shade500, size: 18),
                       ),
-
                       const Spacer(),
-
-                      // UPDATED: Date container with glowing outline and vertical dividers
                       Container(
-                        // Compact padding is maintained
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
-                          // Thinner border width
                           border: Border.all(color: Colors.blue.shade300.withOpacity(0.9), width: 0.5),
                           boxShadow: [
-                            // Subtler Blue Glow (Reduced further)
-                            BoxShadow(
-                              color: Colors.blue.shade600.withOpacity(0.3), // Reduced opacity
-                              blurRadius: 3, // Reduced blur
-                              spreadRadius: 0.3, // Reduced spread
-                              offset: const Offset(0, 0),
-                            ),
-                            // Inner White Shadow (keeps the look focused)
+                            BoxShadow(color: Colors.blue.shade600.withOpacity(0.3), blurRadius: 3, spreadRadius: 0.3, offset: const Offset(0, 0)),
                             BoxShadow(color: Colors.white, blurRadius: 0, spreadRadius: -1.0, offset: const Offset(0, 0)),
                           ],
                         ),
@@ -724,9 +682,8 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                           children: [
                             Text(
                               game.playedAt.year.toString(),
-                              style: GoogleFonts.montserrat(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.blue.shade900),
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.blue.shade900),
                             ),
-                            // Thin, transparent vertical divider
                             Container(
                               height: 10,
                               width: 1.0,
@@ -735,9 +692,8 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                             ),
                             Text(
                               game.playedAt.month.toString().padLeft(2, '0'),
-                              style: GoogleFonts.montserrat(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.blue.shade900),
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.blue.shade900),
                             ),
-                            // Thin, transparent vertical divider
                             Container(
                               height: 10,
                               width: 1.0,
@@ -746,15 +702,12 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                             ),
                             Text(
                               game.playedAt.day.toString().padLeft(2, '0'),
-                              style: GoogleFonts.montserrat(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.blue.shade900),
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.blue.shade900),
                             ),
                           ],
                         ),
                       ),
-
                       const Spacer(),
-
-                      // UPDATED: Close button container identical to game icon
                       InkWell(
                         onTap: () => Navigator.pop(context),
                         child: Container(
@@ -783,13 +736,9 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // REST OF THE CODE REMAINS EXACTLY THE SAME AS YOUR PREVIOUS VERSION
-  // UPDATED: Negative points now use red color with decline graph
+  /// Builds player row for detailed breakdown
   Widget _buildPlayerRow({required MarriagePlayerHistory player, required double netPointChange, required double totalAmount, required Color primaryColor, required Color secondaryColor, required int playerFlex, required int pointsFlex, required int amountFlex, required bool isSmallScreen}) {
     final bool isPositive = netPointChange > 0;
-    final bool isWinner = player.mode.toLowerCase().contains('win');
-
-    // Determine colors based on positive/negative
     final Color pointsColor = isPositive ? Colors.green.shade600 : Colors.red.shade600;
     final Color amountColor = isPositive ? Colors.blue.shade600 : Colors.orange.shade600;
     final IconData pointsIcon = isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded;
@@ -834,7 +783,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // UPDATED: Points container with proper colors for negative values
+  /// Builds points container with trend icon
   Widget _buildPointsContainer(String text, Color color, IconData icon, bool isSmallScreen) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 4 : 6, vertical: isSmallScreen ? 2 : 3),
@@ -859,7 +808,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // UPDATED: Amount container with proper colors for negative values
+  /// Builds amount container with win/loss indicator
   Widget _buildAmountContainer(String amount, Color color, bool isPositive, bool isSmallScreen) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 4 : 6, vertical: isSmallScreen ? 2 : 3),
@@ -879,7 +828,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
           ),
           _buildVerticalDivider(height: isSmallScreen ? 10 : 12, margin: isSmallScreen ? 2 : 4),
           Text(
-            "$amount",
+            amount,
             style: GoogleFonts.poppins(fontSize: isSmallScreen ? 9 : 11, fontWeight: FontWeight.w800, color: color),
           ),
         ],
@@ -887,8 +836,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // ========== REST OF THE METHODS REMAIN THE SAME ==========
-
+  /// Builds game tally section with total points, rate, and players
   Widget _buildGameTallySection(double totalMatchPoints, double pointsPerRupee, int playersCount, bool isSmallScreen) {
     return Container(
       padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
@@ -926,6 +874,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Builds individual stat container
   Widget _buildStatContainer({required String label, required String value, required Color color, bool isRate = false, required bool isSmallScreen}) {
     return Expanded(
       child: Container(
@@ -944,7 +893,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
             ),
             const SizedBox(height: 1),
             Text(
-              isRate ? "$value" : value,
+              isRate ? value : value,
               style: GoogleFonts.poppins(fontSize: isSmallScreen ? 10 : 11, fontWeight: FontWeight.w800, color: color),
             ),
           ],
@@ -953,6 +902,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Builds player breakdown section with detailed player stats
   Widget _buildPlayerBreakdownSection(List<MarriagePlayerHistory> players, double pointsPerRupee, bool isSmallScreen) {
     return Container(
       decoration: BoxDecoration(
@@ -976,16 +926,12 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
               ),
               Divider(height: 1, thickness: 1, color: Colors.blue.shade50),
               ...players.map((player) {
-                // 🎯 CRITICAL FIX: Read the stored net values directly.
-                // The recalculation logic and the reliance on _calculateNetPointsForHistory are removed.
                 final double netPointChange = player.netPointsChange;
                 final double totalAmount = player.netAmountChange;
-
                 final bool isPositive = netPointChange > 0;
                 final Color primaryColor = isPositive ? Colors.green.shade600 : Colors.red.shade600;
                 final Color secondaryColor = isPositive ? Colors.blue.shade600 : Colors.orange.shade600;
 
-                // The call to _buildPlayerRow remains exactly as it was, but with the correct values.
                 return _buildPlayerRow(player: player, netPointChange: netPointChange, totalAmount: totalAmount, primaryColor: primaryColor, secondaryColor: secondaryColor, playerFlex: playerFlex, pointsFlex: pointsFlex, amountFlex: amountFlex, isSmallScreen: isSmallScreen);
               }).toList(),
             ],
@@ -995,6 +941,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Builds player breakdown header
   Widget _buildPlayerBreakdownHeader(int playerFlex, int pointsFlex, int amountFlex, bool isSmallScreen) {
     return Row(
       children: [
@@ -1007,6 +954,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Builds header container content
   Widget _buildHeaderContainerContent(String title, IconData icon, Color color, TextAlign align, bool isSmallScreen) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1021,6 +969,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Builds player name text
   Widget _buildPlayerNameText(String name, bool isSmallScreen) {
     return Text(
       name,
@@ -1028,13 +977,12 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Builds mode and points container
   Widget _buildModePointsContainer(String points, String mode, bool isDoublee, bool isSmallScreen) {
     final MaterialColor color = Colors.lightBlue;
-
     final double originalPoints = double.parse(points);
     final double displayPoints = mode.toLowerCase().contains('win') ? (originalPoints + (isDoublee ? 5.0 : 3.0)) : originalPoints;
     final String displayText = displayPoints.toStringAsFixed(0);
-
     final String modeName = _getModeDisplayName(mode);
 
     return Container(
@@ -1073,12 +1021,14 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Gets display name for game mode
   String _getModeDisplayName(String mode) {
     if (mode.toLowerCase().contains('win')) return 'Win';
     if (mode.toLowerCase().contains('blind')) return 'Blind';
     return 'Seen';
   }
 
+  /// Builds player avatar
   Widget _playerAvatar(MarriagePlayerHistory player, bool isSmallScreen) {
     final double size = isSmallScreen ? 30 : 36;
     return Container(
@@ -1093,6 +1043,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Builds profile image with fallback
   Widget _buildProfileImage(MarriagePlayerHistory player, double size) {
     if (player.userImage != null && player.userImage!.isNotEmpty) {
       if (player.userImage!.startsWith('http')) {
@@ -1126,6 +1077,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     }
   }
 
+  /// Default profile icon fallback
   Widget _defaultProfileIcon({double size = 22}) {
     return Container(
       decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.blue.shade100),
@@ -1133,6 +1085,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
+  /// Builds vertical divider
   Widget _buildVerticalDivider({double height = 18, double margin = 8}) {
     return Container(
       height: height,
@@ -1142,17 +1095,214 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  double _calculateNetPointsForHistory(MarriagePlayerHistory player, List<MarriagePlayerHistory> allPlayers) {
-    final bool isWinner = player.mode.toLowerCase().contains('win');
+  /// Builds player avatar with optional win badge
+  Widget _buildPlayerAvatar(String playerName, {bool showWinBadge = false}) {
+    final userBox = Hive.box<User>('usersBox');
+    final user = userBox.values.firstWhere((user) => user.username == playerName, orElse: () => User(username: playerName));
 
-    if (isWinner) {
-      return player.pointsEarned + (player.isDoublee ? 5.0 : 3.0);
+    Widget avatarWidget;
+
+    if (user.profileImagePath != null && user.profileImagePath!.isNotEmpty) {
+      avatarWidget = ClipOval(
+        child: Image.file(
+          File(user.profileImagePath!),
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildFallbackAvatar(playerName);
+          },
+        ),
+      );
     } else {
-      return -player.pointsEarned;
+      avatarWidget = _buildFallbackAvatar(playerName);
+    }
+
+    if (showWinBadge) {
+      return Stack(
+        children: [
+          avatarWidget,
+          Positioned(
+            top: -1,
+            right: -1,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [Colors.green.shade400, Colors.green.shade700], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.0),
+                boxShadow: [BoxShadow(color: Colors.green.shade500.withOpacity(0.8), blurRadius: 5, spreadRadius: 1, offset: const Offset(0, 1))],
+              ),
+              child: Center(child: Icon(Icons.star_rounded, size: 7, color: Colors.white)),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return avatarWidget;
+  }
+
+  /// Builds fallback avatar when no profile image is available
+  Widget _buildFallbackAvatar(String playerName) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(colors: [Colors.blueAccent, Colors.purpleAccent], begin: Alignment.topLeft, end: Alignment.bottomRight),
+      ),
+      child: Center(
+        child: Text(
+          _getInitials(playerName),
+          style: GoogleFonts.quicksand(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  /// ========== UTILITY METHODS ==========
+
+  /// Formats date header for display
+  String _formatDateHeader(String dateKey) {
+    final parts = dateKey.split('-');
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+    final day = int.parse(parts[2]);
+    final dateTime = DateTime(year, month, day);
+
+    final today = DateTime.now();
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    final isToday = dateTime.year == today.year && dateTime.month == today.month && dateTime.day == today.day;
+    final isYesterday = dateTime.year == yesterday.year && dateTime.month == yesterday.month && dateTime.day == yesterday.day;
+
+    if (isToday) {
+      return 'Today';
+    } else if (isYesterday) {
+      return 'Yesterday';
+    } else {
+      return DateFormat.yMMMd('en_US').format(dateTime);
     }
   }
 
-  // Common Game Header
+  /// Gets top Call Break players based on matches won
+  List<String> _getTopCallBreakPlayers() {
+    final allGames = HistoryRepository.getAllCallBreakGames();
+    if (allGames.isEmpty) return HistoryRepository.getAllPlayers().take(3).toList();
+
+    final winCounts = <String, int>{};
+
+    for (final game in allGames) {
+      final List<double> scores = game.totalScores.map((score) => score.toDouble()).toList();
+      double maxScore = scores.reduce((a, b) => a > b ? a : b);
+      for (int i = 0; i < game.playerNames.length; i++) {
+        if (scores[i] == maxScore) {
+          final playerName = game.playerNames[i];
+          winCounts[playerName] = (winCounts[playerName] ?? 0) + 1;
+        }
+      }
+    }
+
+    final sortedPlayers = winCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+    final topPlayers = sortedPlayers.take(3).map((entry) => entry.key).toList();
+
+    if (topPlayers.length < 3) {
+      final allPlayers = HistoryRepository.getAllPlayers();
+      for (final player in allPlayers) {
+        if (!topPlayers.contains(player) && topPlayers.length < 3) {
+          topPlayers.add(player);
+        }
+      }
+    }
+
+    return topPlayers;
+  }
+
+  /// Gets top Marriage players based on total points earned
+  List<String> _getTopMarriagePlayers() {
+    final allGames = HistoryRepository.getAllMarriageGames();
+    if (allGames.isEmpty) return HistoryRepository.getAllPlayers().take(3).toList();
+
+    final totalPoints = <String, double>{};
+
+    for (final game in allGames) {
+      for (final player in game.players) {
+        final playerName = player.userName;
+        totalPoints[playerName] = (totalPoints[playerName] ?? 0) + player.pointsEarned;
+      }
+    }
+
+    final sortedPlayers = totalPoints.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+    final topPlayers = sortedPlayers.take(3).map((entry) => entry.key).toList();
+
+    if (topPlayers.length < 3) {
+      final allPlayers = HistoryRepository.getAllPlayers();
+      for (final player in allPlayers) {
+        if (!topPlayers.contains(player) && topPlayers.length < 3) {
+          topPlayers.add(player);
+        }
+      }
+    }
+
+    return topPlayers;
+  }
+
+  /// Gets initials from player name
+  String _getInitials(String name) {
+    final names = name.split(' ');
+    if (names.length >= 2) {
+      return '${names[0][0]}${names[1][0]}'.toUpperCase();
+    } else if (name.isNotEmpty) {
+      return name.substring(0, 1).toUpperCase();
+    }
+    return '?';
+  }
+
+  /// Gets short name (first name only)
+  String _getShortName(String name) {
+    final names = name.split(' ');
+    return names.first;
+  }
+
+  /// Gets player rank in Call Break game
+  int _getCallBreakPlayerRank(CallBreakGameHistory game, int playerIndex) {
+    final List<double> scores = game.totalScores.map((score) => score.toDouble()).toList();
+    List<Map<String, dynamic>> playersWithPoints = [];
+
+    for (int i = 0; i < game.playerNames.length; i++) {
+      playersWithPoints.add({'index': i, 'points': scores[i]});
+    }
+
+    playersWithPoints.sort((a, b) => b['points'].compareTo(a['points']));
+
+    for (int i = 0; i < playersWithPoints.length; i++) {
+      if (playersWithPoints[i]['index'] == playerIndex) {
+        return i;
+      }
+    }
+    return playersWithPoints.length - 1;
+  }
+
+  /// Gets player rank in Marriage game
+  int _getMarriagePlayerRank(MarriageGameHistory game, int playerIndex) {
+    List<Map<String, dynamic>> playersWithPoints = [];
+
+    for (int i = 0; i < game.players.length; i++) {
+      playersWithPoints.add({'index': i, 'points': game.players[i].pointsEarned});
+    }
+
+    playersWithPoints.sort((a, b) => b['points'].compareTo(a['points']));
+
+    for (int i = 0; i < playersWithPoints.length; i++) {
+      if (playersWithPoints[i]['index'] == playerIndex) {
+        return i;
+      }
+    }
+    return playersWithPoints.length - 1;
+  }
+
+  /// Builds game header with timestamp
   Widget _buildGameHeader(DateTime timestamp, bool isSmallScreen) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1221,7 +1371,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  // Empty State
+  /// Builds empty state widget
   Widget _buildEmptyState(String message, IconData icon) {
     return Center(
       child: Column(
@@ -1229,240 +1379,15 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
         children: [
           Icon(icon, size: 48, color: ModernColors.textLight),
           const SizedBox(height: 12),
-          Text(message, style: GoogleFonts.inter(color: ModernColors.textLight, fontSize: 14)),
+          Text(message, style: GoogleFonts.poppins(color: ModernColors.textLight, fontSize: 14)),
         ],
       ),
     );
   }
 
-  // Build Player Avatar with Hive Profile Image
-  // UPDATED: Build Player Avatar with Win Badge
-  Widget _buildPlayerAvatar(String playerName, {bool showWinBadge = false}) {
-    final userBox = Hive.box<User>('usersBox');
-    final user = userBox.values.firstWhere((user) => user.username == playerName, orElse: () => User(username: playerName));
+  /// ========== RANK STYLING METHODS ==========
 
-    Widget avatarWidget;
-
-    if (user.profileImagePath != null && user.profileImagePath!.isNotEmpty) {
-      avatarWidget = ClipOval(
-        child: Image.file(
-          File(user.profileImagePath!),
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildFallbackAvatar(playerName);
-          },
-        ),
-      );
-    } else {
-      avatarWidget = _buildFallbackAvatar(playerName);
-    }
-
-    // Add win badge if player won
-    if (showWinBadge) {
-      return Stack(
-        children: [
-          avatarWidget,
-          Positioned(
-            top: -1,
-            right: -1,
-            child: Container(
-              width: 14, // Reduced from 16
-              height: 14, // Reduced from 16
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [Colors.green.shade400, Colors.green.shade700], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.green.shade500.withOpacity(0.8),
-                    blurRadius: 5, // Slightly reduced blur
-                    spreadRadius: 1,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.star_rounded,
-                  size: 7, // Reduced from 8
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return avatarWidget;
-  }
-
-  // Fallback avatar when no profile image is available
-  Widget _buildFallbackAvatar(String playerName) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.blueAccent, Colors.purpleAccent], begin: Alignment.topLeft, end: Alignment.bottomRight),
-      ),
-      child: Center(
-        child: Text(
-          _getInitials(playerName),
-          style: GoogleFonts.quicksand(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
-        ),
-      ),
-    );
-  }
-
-  // Utility Methods
-
-  String _formatDateHeader(String dateKey) {
-    final parts = dateKey.split('-');
-    final year = int.parse(parts[0]);
-    final month = int.parse(parts[1]);
-    final day = int.parse(parts[2]);
-    final dateTime = DateTime(year, month, day);
-
-    final today = DateTime.now();
-    final yesterday = today.subtract(const Duration(days: 1));
-
-    final isToday = dateTime.year == today.year && dateTime.month == today.month && dateTime.day == today.day;
-    final isYesterday = dateTime.year == yesterday.year && dateTime.month == yesterday.month && dateTime.day == yesterday.day;
-
-    if (isToday) {
-      return 'Today';
-    } else if (isYesterday) {
-      return 'Yesterday';
-    } else {
-      return DateFormat.yMMMd('en_US').format(dateTime);
-    }
-  }
-
-  // UPDATED: Get top Call Break players based on matches won
-  List<String> _getTopCallBreakPlayers() {
-    final allGames = HistoryRepository.getAllCallBreakGames();
-    if (allGames.isEmpty) return HistoryRepository.getAllPlayers().take(3).toList();
-
-    // Count wins for each player
-    final winCounts = <String, int>{};
-
-    for (final game in allGames) {
-      // FIX: Explicitly map all scores to double to handle old data
-      final List<double> scores = game.totalScores.map((score) => score.toDouble()).toList();
-
-      // Find the winner (player with highest score)
-      double maxScore = scores.reduce((a, b) => a > b ? a : b);
-      for (int i = 0; i < game.playerNames.length; i++) {
-        if (scores[i] == maxScore) {
-          final playerName = game.playerNames[i];
-          winCounts[playerName] = (winCounts[playerName] ?? 0) + 1;
-        }
-      }
-    }
-
-    // Sort players by win count (descending)
-    final sortedPlayers = winCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-
-    // Take top 3 or fill with available players
-    final topPlayers = sortedPlayers.take(3).map((entry) => entry.key).toList();
-
-    // If we have less than 3 players, fill with other players who have played
-    if (topPlayers.length < 3) {
-      final allPlayers = HistoryRepository.getAllPlayers();
-      for (final player in allPlayers) {
-        if (!topPlayers.contains(player) && topPlayers.length < 3) {
-          topPlayers.add(player);
-        }
-      }
-    }
-
-    return topPlayers;
-  }
-
-  // UPDATED: Get top Marriage players based on total points earned
-  List<String> _getTopMarriagePlayers() {
-    final allGames = HistoryRepository.getAllMarriageGames();
-    if (allGames.isEmpty) return HistoryRepository.getAllPlayers().take(3).toList();
-
-    // Calculate total points earned for each player
-    final totalPoints = <String, double>{};
-
-    for (final game in allGames) {
-      for (final player in game.players) {
-        final playerName = player.userName;
-        totalPoints[playerName] = (totalPoints[playerName] ?? 0) + player.pointsEarned;
-      }
-    }
-
-    // Sort players by total points (descending)
-    final sortedPlayers = totalPoints.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-
-    // Take top 3 or fill with available players
-    final topPlayers = sortedPlayers.take(3).map((entry) => entry.key).toList();
-
-    // If we have less than 3 players, fill with other players who have played
-    if (topPlayers.length < 3) {
-      final allPlayers = HistoryRepository.getAllPlayers();
-      for (final player in allPlayers) {
-        if (!topPlayers.contains(player) && topPlayers.length < 3) {
-          topPlayers.add(player);
-        }
-      }
-    }
-
-    return topPlayers;
-  }
-
-  String _getInitials(String name) {
-    final names = name.split(' ');
-    if (names.length >= 2) {
-      return '${names[0][0]}${names[1][0]}'.toUpperCase();
-    } else if (name.isNotEmpty) {
-      return name.substring(0, 1).toUpperCase();
-    }
-    return '?';
-  }
-
-  String _getShortName(String name) {
-    final names = name.split(' ');
-    return names.first;
-  }
-
-  int _getCallBreakPlayerRank(CallBreakGameHistory game, int playerIndex) {
-    final List<double> scores = game.totalScores.map((score) => score.toDouble()).toList();
-    List<Map<String, dynamic>> playersWithPoints = [];
-
-    for (int i = 0; i < game.playerNames.length; i++) {
-      playersWithPoints.add({'index': i, 'points': scores[i]});
-    }
-
-    playersWithPoints.sort((a, b) => b['points'].compareTo(a['points']));
-
-    for (int i = 0; i < playersWithPoints.length; i++) {
-      if (playersWithPoints[i]['index'] == playerIndex) {
-        return i;
-      }
-    }
-    return playersWithPoints.length - 1;
-  }
-
-  int _getMarriagePlayerRank(MarriageGameHistory game, int playerIndex) {
-    List<Map<String, dynamic>> playersWithPoints = [];
-
-    for (int i = 0; i < game.players.length; i++) {
-      playersWithPoints.add({'index': i, 'points': game.players[i].pointsEarned});
-    }
-
-    playersWithPoints.sort((a, b) => b['points'].compareTo(a['points']));
-
-    for (int i = 0; i < playersWithPoints.length; i++) {
-      if (playersWithPoints[i]['index'] == playerIndex) {
-        return i;
-      }
-    }
-    return playersWithPoints.length - 1;
-  }
-
+  /// Gets gradient for rank styling
   Gradient _getRankGradient(int rank) {
     switch (rank) {
       case 0:
@@ -1476,6 +1401,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     }
   }
 
+  /// Gets color for rank styling
   Color _getRankColor(int rank) {
     switch (rank) {
       case 0:
@@ -1489,6 +1415,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     }
   }
 
+  /// Gets border color for rank styling
   Color _getRankBorderColor(int rank) {
     switch (rank) {
       case 0:
@@ -1502,6 +1429,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     }
   }
 
+  /// Gets icon for rank styling
   IconData _getRankIcon(int rank) {
     switch (rank) {
       case 0:
@@ -1515,6 +1443,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     }
   }
 
+  /// Gets text for rank styling
   String _getRankText(int rank) {
     switch (rank) {
       case 0:

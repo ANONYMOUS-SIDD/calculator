@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Modern color palette for consistent theming across the app
 class ModernColors {
   static const Color primary = Color(0xFF6366F1);
   static const Color primaryDark = Color(0xFF4F46E5);
@@ -13,7 +14,8 @@ class ModernColors {
   static const Color primaryContainer = Color(0xFFEEF2FF);
 }
 
-// Separate Modern App Bar Widget
+/// Modern app bar with gradient background and floating shapes decoration
+/// Provides a consistent header component with back navigation
 class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
@@ -22,6 +24,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(50.0);
 
+  /// Creates a floating circular shape for the background decoration
   Widget _buildFloatingShape(double size, Color color) {
     return Container(
       width: size,
@@ -30,6 +33,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  /// Builds the decorative background with floating shapes and gradient
   Widget _buildAppBarDecoration(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -38,6 +42,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       child: Stack(
         children: [
+          // Floating shapes for visual decoration
           Positioned(top: -10, left: 20, child: _buildFloatingShape(25, ModernColors.primary.withOpacity(0.08))),
           Positioned(bottom: 10, right: 40, child: _buildFloatingShape(40, ModernColors.primary.withOpacity(0.06))),
           Positioned(top: 30, left: 100, child: _buildFloatingShape(30, ModernColors.primary.withOpacity(0.1))),
@@ -67,11 +72,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       child: AppBar(
         toolbarHeight: 60,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent, // Make status bar background transparent
-          statusBarIconBrightness: Brightness.dark, // Dark icons for status bar
-          statusBarBrightness: Brightness.light, // For iOS
-        ),
+        systemOverlayStyle: const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark, statusBarBrightness: Brightness.light),
         backgroundColor: Colors.white,
         elevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(20.0))),
@@ -90,6 +91,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Column(
             children: [
               Expanded(child: _buildAppBarDecoration(context)),
+              // Bottom border with gradient
               Container(
                 height: 1.5,
                 decoration: BoxDecoration(gradient: LinearGradient(colors: [ModernColors.outline.withOpacity(0.8), ModernColors.outline.withOpacity(0.4), ModernColors.outline.withOpacity(0.8)])),

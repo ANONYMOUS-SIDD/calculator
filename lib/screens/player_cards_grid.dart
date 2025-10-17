@@ -1,5 +1,3 @@
-// widgets/player_cards_grid.dart (Updated with White Themed Dialogs & Color Swaps)
-
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -12,26 +10,54 @@ import '../model/marriage_game.dart';
 import '../model/user_model.dart' as PlayerDialog;
 import '../widgets/player_selection_dialog.dart' as PlayerDialog;
 
-// --- Custom Colors and Styles ---
+// ==================== CUSTOM COLORS AND STYLES ====================
+
+/// Primary dark blue color
 const Color _primaryDark = Color(0xFF1E3A8A);
+
+/// Primary medium blue color
 const Color _primaryMedium = Color(0xFF2563EB);
+
+/// Primary light blue color
 const Color _primaryLight = Color(0xFF3B82F6);
+
+/// Text grey color
 const Color _textGrey = Color(0xFF6B7280);
+
+/// Light grey background color
 const Color _lightGrey = Color(0xFFF8FAFC);
+
+/// Border grey color
 const Color _borderGrey = Color(0xFFE5E7EB);
+
+/// iOS-style border color
 const Color _iosBorder = Color(0xFFD1D5DB);
+
+/// iOS-style background color
 const Color _iosBackground = Color(0xFFF9FAFB);
+
+/// Doublee mode indicator color
 const Color _doubleeColor = Color(0xFF06B6D4);
-const Color _softGreen = Color(0xFF34D399);
+
+/// Success green color
 const Color _successGreen = Color(0xFF10B981);
+
+/// Dark text color
 const Color _darkText = Color(0xFF1A1D2B);
 
-// 🔥 CHANGE: Swapped Blind and Seen colors
+/// Blue gradient for primary elements
 const LinearGradient _blueGradient = LinearGradient(colors: [_primaryDark, _primaryMedium, _primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight);
-const LinearGradient _seenGradient = LinearGradient(colors: [_primaryDark, _primaryMedium, _primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight); // Now uses blue gradient
-const LinearGradient _blindGradient = LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)], begin: Alignment.topLeft, end: Alignment.bottomRight); // Now uses purple gradient
+
+/// Blue gradient for Seen mode (swapped from original)
+const LinearGradient _seenGradient = LinearGradient(colors: [_primaryDark, _primaryMedium, _primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight);
+
+/// Purple gradient for Blind mode (swapped from original)
+const LinearGradient _blindGradient = LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)], begin: Alignment.topLeft, end: Alignment.bottomRight);
+
+/// Green gradient for Win mode
 const LinearGradient _winGradient = LinearGradient(colors: [Color(0xFF10B981), Color(0xFF34D399)], begin: Alignment.topLeft, end: Alignment.bottomRight);
 
+/// Widget that displays a grid of player cards with status, points, and mode controls
 class PlayerCardsGrid extends StatefulWidget {
   final Function(String, double) onPointsChanged;
   final Function(String) onDoubleeToggle;
@@ -57,20 +83,22 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
 
     _initializePlayerStates(_playerController.players);
 
+    // Listen for player list changes and update local state accordingly
     _playerListListener = ever(_playerController.players, (List<MarriagePlayer> players) {
       setState(() {
-        debugPrint('PlayerCardsGrid: Listener triggered. Resetting local _playerStates');
         _justConfirmedPlayers = false;
         _initializePlayerStates(players);
         _updateCurrentWinner();
       });
     });
 
+    // Check initial players after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialPlayers();
     });
   }
 
+  /// Initializes local player states from the controller's player list
   void _initializePlayerStates(List<MarriagePlayer> players) {
     for (final player in players) {
       if (!_playerStates.containsKey(player.userName)) {
@@ -88,16 +116,17 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
             break;
         }
         _playerStates[player.userName] = {'status': status, 'points': player.pointsEarned};
-        debugPrint('PlayerCardsGrid: Initialized state for ${player.userName} with mode ${player.mode}');
       }
     }
 
+    // Remove any players that are no longer in the list
     final currentPlayerNames = players.map((p) => p.userName).toSet();
     _playerStates.removeWhere((userName, _) => !currentPlayerNames.contains(userName));
 
     _updateCurrentWinner();
   }
 
+  /// Updates the current winner tracking based on player modes
   void _updateCurrentWinner() {
     final players = _playerController.players;
     for (final player in players) {
@@ -109,26 +138,29 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
     _currentWinnerUserName = null;
   }
 
+  /// Gets the current state for a specific player
   Map<String, dynamic> _getPlayerState(String userName) {
     return _playerStates[userName] ?? {'status': 'Seen', 'points': 0.0};
   }
 
+  /// Updates the local state for a specific player
   void _updatePlayerState(String userName, String status, double points) {
     setState(() {
       _playerStates[userName] = {'status': status, 'points': points};
     });
   }
 
+  /// Checks if a player can be set as winner
   bool _canSetWinner(String currentPlayerUserName) {
     if (_currentWinnerUserName == null) return true;
     if (_currentWinnerUserName == currentPlayerUserName) return true;
     return false;
   }
 
+  /// Checks if initial players need to be loaded
   void _checkInitialPlayers() {
     if (!_hasAttemptedInitialLoad && _playerController.players.isEmpty) {
       _hasAttemptedInitialLoad = true;
-      debugPrint('PlayerCardsGrid: Initial player list is empty. Prompting user to select players.');
     }
   }
 
@@ -138,6 +170,7 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
     super.dispose();
   }
 
+  /// Shows the player selection dialog for adding/editing players
   void _showPlayerSelectionDialog(BuildContext context) async {
     final List<MarriagePlayer> currentPlayers = _playerController.players.toList();
     final int requiredPlayerCount = currentPlayers.isNotEmpty ? currentPlayers.length : 4;
@@ -160,108 +193,108 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
     }
   }
 
+  /// Shows confirmation dialog for enabling/disabling doublee mode with updated design
   void _showDoubleeDialog(BuildContext context, MarriagePlayer player) {
     final isCurrentlyDoublee = player.isDoublee;
     final actionText = isCurrentlyDoublee ? 'Disable' : 'Enable';
-    final confirmationText = isCurrentlyDoublee ? 'Are you sure you want to disable Doublee mode for ${player.userName}?' : 'Are you sure you want to enable Doublee mode for ${player.userName}?';
+    final confirmationText = isCurrentlyDoublee ? 'Are you sure you want to disable Doublee mode for ${player.userName}' : 'Are you sure you want to enable Doublee mode for ${player.userName}?';
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+    Get.defaultDialog(
+      // --- DIALOG STYLING ---
+      backgroundColor: Colors.white,
+      radius: 14.0,
+      title: "",
+      titlePadding: EdgeInsets.zero,
+      contentPadding: EdgeInsets.zero,
+
+      // --- CUSTOM CONTENT SECTION ---
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 1. Title (Top padding set for spacing)
+          Padding(
+            padding: const EdgeInsets.only(top: 0, bottom: 5.0, left: 15.0, right: 15.0),
+            child: Text(
+              "Doublee Mode",
+              style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.black),
+            ),
+          ),
+
+          // 2. Confirmation Content
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                // Header Section
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(top: 20, bottom: 20, left: 20, right: 20),
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Color(0xFFE5E5EA), width: 0.5)),
-                  ),
-                  child: Column(
-                    children: [
-                      // Title
-                      Text(
-                        "Doublee Mode",
-                        style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w600, color: const Color(0xFF1C1C1E)),
-                      ),
-                      const SizedBox(height: 4),
-                      // Subtitle
-                      Text(
-                        confirmationText,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w400, color: const Color(0xFF666668), height: 1.4),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Buttons Section
-                Container(
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: Color(0xFFE5E5EA), width: 0.5)),
-                  ),
-                  child: Row(
-                    children: [
-                      // Cancel Button
-                      Expanded(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => Navigator.pop(ctx),
-                            borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(14)),
-                            child: Center(
-                              child: Text(
-                                "Cancel",
-                                style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(0xFF007AFF)),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Vertical Divider
-                      Container(width: 0.5, height: 44, color: const Color(0xFFE5E5EA)),
-                      // Action Button (Enable/Disable)
-                      Expanded(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.pop(ctx);
-                              widget.onDoubleeToggle(player.userName);
-                            },
-                            borderRadius: const BorderRadius.only(bottomRight: Radius.circular(14)),
-                            child: Center(
-                              child: Text(
-                                actionText,
-                                style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500, color: isCurrentlyDoublee ? const Color(0xFFFF3B30) : const Color(0xFF34C759)),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 15.0),
+                  child: Text(
+                    confirmationText,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
                 ),
               ],
             ),
           ),
-        );
-      },
+        ],
+      ),
+
+      // --- CUSTOM ACTIONS SECTION (Single Row with Divider) ---
+      actions: [
+        Column(
+          children: [
+            const Divider(color: Colors.black12, height: 1.0, thickness: 0.8),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // 1. Cancel Action (Left Button)
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 11), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
+                    onPressed: () {
+                      Get.back(); // Simply close the dialog
+                    },
+                    child: Text(
+                      "Cancel",
+                      // CHANGED: GoogleFonts.quicksand to GoogleFonts.poppins
+                      style: GoogleFonts.quicksand(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.blue.shade700),
+                    ),
+                  ),
+                ),
+
+                // Vertical Divider
+                Container(height: 45, width: 0.8, color: Colors.black12),
+
+                // 2. Action Button (Enable/Disable)
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 11), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
+                    onPressed: () {
+                      Get.back();
+                      widget.onDoubleeToggle(player.userName);
+                    },
+                    child: Text(
+                      actionText,
+                      // CHANGED: GoogleFonts.quicksand to GoogleFonts.poppins
+                      style: GoogleFonts.quicksand(fontWeight: FontWeight.w800, fontSize: 16, color: isCurrentlyDoublee ? Colors.red.shade700 : Colors.green.shade700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
     );
   }
 
+  /// Determines grid cross axis count based on player count
   int _getCrossAxisCount(int playerCount) {
     return 2;
   }
 
+  /// Determines grid child aspect ratio based on player count
   double _getChildAspectRatio(int playerCount) {
     return 0.65;
   }
@@ -271,6 +304,7 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
     return Obx(() {
       final players = _playerController.players;
 
+      // Show empty state if no players are selected
       if (players.isEmpty && !_justConfirmedPlayers) {
         return Center(
           child: Padding(
@@ -282,13 +316,15 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                 const SizedBox(height: 16),
                 Text(
                   'Please select ${players.isEmpty ? 'players' : players.length} to start the game.',
-                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: _textGrey),
+                  // CHANGED: GoogleFonts.inter to GoogleFonts.poppins
+                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: _textGrey),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed: () => _showPlayerSelectionDialog(context),
                   icon: const Icon(Icons.group_add, color: Colors.white),
-                  label: Text('Select Players', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                  // CHANGED: GoogleFonts.inter to GoogleFonts.poppins
+                  label: Text('Select Players', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryMedium,
                     foregroundColor: Colors.white,
@@ -323,7 +359,8 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                   const SizedBox(width: 12),
                   Text(
                     'Current Players',
-                    style: GoogleFonts.inter(fontSize: screenWidth * 0.04, fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B)),
+                    // CHANGED: GoogleFonts.inter to GoogleFonts.poppins
+                    style: GoogleFonts.poppins(fontSize: screenWidth * 0.04, fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B)),
                   ),
                   const Spacer(),
                   Container(
@@ -338,12 +375,14 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
                       children: [
                         Text(
                           'Total',
-                          style: GoogleFonts.inter(fontSize: screenWidth * 0.03, color: _textGrey, fontWeight: FontWeight.w600),
+                          // CHANGED: GoogleFonts.inter to GoogleFonts.poppins
+                          style: GoogleFonts.poppins(fontSize: screenWidth * 0.03, color: _textGrey, fontWeight: FontWeight.w600),
                         ),
                         Container(width: 1.5, height: 14, margin: const EdgeInsets.symmetric(horizontal: 4), color: _borderGrey),
                         Text(
                           '${players.length}',
-                          style: GoogleFonts.inter(fontSize: screenWidth * 0.03, color: _textGrey, fontWeight: FontWeight.w600),
+                          // CHANGED: GoogleFonts.inter to GoogleFonts.poppins
+                          style: GoogleFonts.poppins(fontSize: screenWidth * 0.03, color: _textGrey, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -431,6 +470,7 @@ class _PlayerCardsGridState extends State<PlayerCardsGrid> {
   }
 }
 
+/// Individual player card widget displaying player info, status, and controls
 class _PlayerCard extends StatefulWidget {
   final MarriagePlayer player;
   final int index;
@@ -486,6 +526,7 @@ class _PlayerCardState extends State<_PlayerCard> {
     super.dispose();
   }
 
+  /// Gets the color for a specific player status
   Color _getStatusColor(String status) {
     switch (status) {
       case 'Win':
@@ -498,6 +539,7 @@ class _PlayerCardState extends State<_PlayerCard> {
     }
   }
 
+  /// Builds a status option button (Blind, Seen, Win)
   Widget _buildStatusOption(BuildContext context, String option) {
     final isSelected = widget.status == option;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -561,7 +603,8 @@ class _PlayerCardState extends State<_PlayerCard> {
             child: Center(
               child: Text(
                 option,
-                style: GoogleFonts.inter(fontSize: fontSize < 9.0 ? 9.0 : fontSize, fontWeight: FontWeight.w700, color: isSelected ? Colors.white : (isWinDisabled ? _textGrey.withOpacity(0.5) : const Color(0xFF374151))),
+                // CHANGED: GoogleFonts.inter to GoogleFonts.poppins
+                style: GoogleFonts.quicksand(fontSize: fontSize < 9.0 ? 9.0 : fontSize, fontWeight: FontWeight.w700, color: isSelected ? Colors.white : (isWinDisabled ? _textGrey.withOpacity(0.5) : const Color(0xFF374151))),
               ),
             ),
           ),
@@ -626,13 +669,14 @@ class _PlayerCardState extends State<_PlayerCard> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.person_outline, size: screenWidth * 0.035, color: _primaryDark),
+                            Icon(Icons.person, size: screenWidth * 0.035, color: _primaryDark),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 widget.player.userName,
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.inter(fontSize: screenWidth * 0.035, fontWeight: FontWeight.w600, color: const Color(0xFF1A1D2B)),
+                                // CHANGED: GoogleFonts.inter to GoogleFonts.poppins
+                                style: GoogleFonts.quicksand(fontSize: screenWidth * 0.035, fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2B)),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -679,7 +723,8 @@ class _PlayerCardState extends State<_PlayerCard> {
                                         enabled: widget.isInputEnabled,
                                         textAlign: TextAlign.right,
                                         keyboardType: TextInputType.number,
-                                        style: GoogleFonts.inter(fontSize: screenWidth * 0.03, fontWeight: FontWeight.w600, color: widget.isInputEnabled ? _primaryDark : _textGrey.withOpacity(0.4)),
+                                        // CHANGED: GoogleFonts.inter to GoogleFonts.poppins
+                                        style: GoogleFonts.poppins(fontSize: screenWidth * 0.03, fontWeight: FontWeight.w600, color: widget.isInputEnabled ? _primaryDark : _textGrey.withOpacity(0.4)),
                                         decoration: const InputDecoration(
                                           border: InputBorder.none,
                                           isDense: true,
@@ -710,6 +755,7 @@ class _PlayerCardState extends State<_PlayerCard> {
               ),
             ],
           ),
+          // Doublee mode indicator badge
           if (widget.isDoublee && widget.isDoubleeEnabled)
             Positioned(
               top: 10,
@@ -722,7 +768,8 @@ class _PlayerCardState extends State<_PlayerCard> {
                 ),
                 child: Text(
                   '2x',
-                  style: GoogleFonts.inter(fontSize: screenWidth * 0.025, color: Colors.white, fontWeight: FontWeight.w700),
+                  // CHANGED: GoogleFonts.inter to GoogleFonts.poppins
+                  style: GoogleFonts.poppins(fontSize: screenWidth * 0.025, color: Colors.white, fontWeight: FontWeight.w700),
                 ),
               ),
             ),

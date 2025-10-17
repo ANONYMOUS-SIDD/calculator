@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/moder_app_bar.dart';
 
+/// Modern color palette for consistent theming
 class ModernColors {
   static const Color primary = Color(0xFF6366F1);
   static const Color primaryDark = Color(0xFF4F46E5);
@@ -16,6 +17,8 @@ class ModernColors {
   static const Color error = Color(0xFFEF4444);
 }
 
+/// Comprehensive user manual and rules screen
+/// Features expandable sections for different game types and app features
 class RulesScreen extends StatefulWidget {
   final String tag;
   final Color color;
@@ -31,18 +34,21 @@ class _RulesScreenState extends State<RulesScreen> {
   final Map<String, bool> _expandedSections = {};
   final Map<String, bool> _expandedSubSections = {};
 
+  /// Toggles expansion state for main sections
   void _toggleSection(String key) {
     setState(() {
       _expandedSections[key] = !(_expandedSections[key] ?? false);
     });
   }
 
+  /// Toggles expansion state for sub-sections
   void _toggleSubSection(String key) {
     setState(() {
       _expandedSubSections[key] = !(_expandedSubSections[key] ?? false);
     });
   }
 
+  /// Builds main game section with expandable functionality
   Widget _buildGameSection({required String sectionKey, required String title, required IconData icon, required Color primaryColor, required Color secondaryColor, required List<Map<String, dynamic>> subsections}) {
     final isExpanded = _expandedSections[sectionKey] ?? false;
 
@@ -64,6 +70,7 @@ class _RulesScreenState extends State<RulesScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
+                    // Section icon with gradient border
                     Container(
                       width: 36,
                       height: 36,
@@ -76,26 +83,19 @@ class _RulesScreenState extends State<RulesScreen> {
                       child: Icon(icon, size: 18, color: primaryColor),
                     ),
                     const SizedBox(width: 12),
+                    // Section title and description
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             title,
-                            style: GoogleFonts.quicksand(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: primaryColor.darken(0.3),
-                            ),
+                            style: GoogleFonts.quicksand(fontSize: 16, fontWeight: FontWeight.w800, color: primaryColor.darken(0.3)),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${subsections.length} sections',
-                            style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: primaryColor.withOpacity(0.7),
-                            ),
+                            style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w500, color: primaryColor.withOpacity(0.7)),
                           ),
                         ],
                       ),
@@ -103,20 +103,14 @@ class _RulesScreenState extends State<RulesScreen> {
                     // Section count badge
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                          color: primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8)
-                      ),
+                      decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                       child: Text(
                         '${subsections.length}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: primaryColor,
-                        ),
+                        style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: primaryColor),
                       ),
                     ),
                     const SizedBox(width: 8),
+                    // Expand/collapse arrow
                     AnimatedRotation(
                       duration: const Duration(milliseconds: 200),
                       turns: isExpanded ? 0.5 : 0,
@@ -127,21 +121,13 @@ class _RulesScreenState extends State<RulesScreen> {
               ),
             ),
           ),
+          // Expanded content
           if (isExpanded) ...[
             Divider(color: Colors.grey.shade200, height: 1),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
-                children: subsections.map((subsection) => _buildSubSection(
-                  sectionKey: sectionKey,
-                  subsectionKey: subsection['key'],
-                  title: subsection['title'],
-                  icon: subsection['icon'],
-                  description: subsection['description'],
-                  points: subsection['points'],
-                  gradientColors: subsection['colors'],
-                  primaryColor: primaryColor,
-                )).toList(),
+                children: subsections.map((subsection) => _buildSubSection(sectionKey: sectionKey, subsectionKey: subsection['key'], title: subsection['title'], icon: subsection['icon'], description: subsection['description'], points: subsection['points'], gradientColors: subsection['colors'], primaryColor: primaryColor)).toList(),
               ),
             ),
           ],
@@ -150,6 +136,7 @@ class _RulesScreenState extends State<RulesScreen> {
     );
   }
 
+  /// Builds individual sub-section with detailed content
   Widget _buildSubSection({required String sectionKey, required String subsectionKey, required String title, required IconData icon, required String description, required List<String> points, required List<Color> gradientColors, required Color primaryColor}) {
     final key = '$sectionKey-$subsectionKey';
     final isExpanded = _expandedSubSections[key] ?? false;
@@ -175,6 +162,7 @@ class _RulesScreenState extends State<RulesScreen> {
                   padding: const EdgeInsets.all(10),
                   child: Row(
                     children: [
+                      // Sub-section icon with gradient
                       Container(
                         width: 32,
                         height: 32,
@@ -187,26 +175,19 @@ class _RulesScreenState extends State<RulesScreen> {
                         child: Icon(icon, size: 16, color: Colors.white),
                       ),
                       const SizedBox(width: 10),
+                      // Sub-section title and point count
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               title,
-                              style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.grey.shade800
-                              ),
+                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey.shade800),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${points.length} points',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade600,
-                              ),
+                              style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
                             ),
                           ],
                         ),
@@ -214,20 +195,14 @@ class _RulesScreenState extends State<RulesScreen> {
                       // Point count badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                            color: primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6)
-                        ),
+                        decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
                         child: Text(
                           '${points.length}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: primaryColor,
-                          ),
+                          style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w700, color: primaryColor),
                         ),
                       ),
                       const SizedBox(width: 8),
+                      // Expand/collapse arrow
                       AnimatedRotation(
                         duration: const Duration(milliseconds: 200),
                         turns: isExpanded ? 0.5 : 0,
@@ -238,6 +213,7 @@ class _RulesScreenState extends State<RulesScreen> {
                 ),
               ),
             ),
+            // Expanded sub-section content
             if (isExpanded) ...[
               Divider(color: Colors.grey.shade100, height: 1, indent: 10, endIndent: 10),
               Padding(
@@ -245,7 +221,7 @@ class _RulesScreenState extends State<RulesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Description
+                    // Description box
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -261,25 +237,22 @@ class _RulesScreenState extends State<RulesScreen> {
                           Expanded(
                             child: Text(
                               description,
-                              style: GoogleFonts.poppins(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.5,
-                                  color: Colors.grey.shade800
-                              ),
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, height: 1.5, color: Colors.grey.shade800),
                             ),
                           ),
                         ],
                       ),
                     ),
+                    // Points list
                     if (points.isNotEmpty) ...[
                       const SizedBox(height: 10),
                       ...points.asMap().entries.map(
-                            (entry) => Padding(
+                        (entry) => Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Numbered point indicator
                               Container(
                                 margin: const EdgeInsets.only(top: 4),
                                 width: 18,
@@ -292,24 +265,14 @@ class _RulesScreenState extends State<RulesScreen> {
                                 child: Center(
                                   child: Text(
                                     '${entry.key + 1}',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
+                                    style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 8),
+                              // Point text
                               Expanded(
-                                child: Text(
-                                    entry.value,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10.5,
-                                      color: Colors.grey.shade700,
-                                      height: 1.4,
-                                    )
-                                ),
+                                child: Text(entry.value, style: GoogleFonts.poppins(fontSize: 10.5, color: Colors.grey.shade700, height: 1.4)),
                               ),
                             ],
                           ),
@@ -337,7 +300,11 @@ class _RulesScreenState extends State<RulesScreen> {
     final double horizontalPadding = isSmallScreen ? 12.0 : 16.0;
     final double containerPadding = isSmallScreen ? 6.0 : 8.0;
     final double sectionPadding = isSmallScreen ? 10.0 : 12.0;
-    final double titleFontSize = isSmallScreen ? 14.0 : isLargeScreen ? 18.0 : 16.0;
+    final double titleFontSize = isSmallScreen
+        ? 14.0
+        : isLargeScreen
+        ? 18.0
+        : 16.0;
     final double iconSize = isSmallScreen ? 16.0 : 18.0;
     final double smallIconSize = isSmallScreen ? 14.0 : 16.0;
 
@@ -356,48 +323,28 @@ class _RulesScreenState extends State<RulesScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                    spreadRadius: 0,
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
-                    spreadRadius: -5,
-                  ),
+                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 30, offset: const Offset(0, 10), spreadRadius: 0),
+                  BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 15, offset: const Offset(0, 4), spreadRadius: -5),
                 ],
               ),
               child: Column(
                 children: [
-                  // First iOS Container - Game Sections
+                  // Game Sections Container
                   Container(
                     margin: EdgeInsets.only(bottom: isSmallScreen ? 12.0 : 16.0),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
+                        BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8)),
+                        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
                       ],
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
                         padding: EdgeInsets.all(containerPadding),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                        ),
+                        decoration: const BoxDecoration(color: Colors.white),
                         child: Column(
                           children: [
                             // Marriage Game Section
@@ -628,33 +575,24 @@ class _RulesScreenState extends State<RulesScreen> {
                     ),
                   ),
 
-                  // Second iOS Container - Support Section
+                  // Support Section Container
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
+                        BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8)),
+                        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
                       ],
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
                         padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                        ),
+                        decoration: const BoxDecoration(color: Colors.white),
                         child: Column(
                           children: [
+                            // Support icon
                             Container(
                               width: isSmallScreen ? 40.0 : 44.0,
                               height: isSmallScreen ? 40.0 : 44.0,
@@ -668,37 +606,23 @@ class _RulesScreenState extends State<RulesScreen> {
                                   gradient: LinearGradient(colors: [Colors.orange.shade700, Colors.red.shade500], begin: Alignment.topLeft, end: Alignment.bottomRight),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(
-                                    Icons.support_agent_rounded,
-                                    size: isSmallScreen ? 20.0 : 22.0,
-                                    color: Colors.white
-                                ),
+                                child: Icon(Icons.support_agent_rounded, size: isSmallScreen ? 20.0 : 22.0, color: Colors.white),
                               ),
                             ),
                             SizedBox(height: isSmallScreen ? 8.0 : 12.0),
                             Text(
                               'Need Help?',
-                              style: GoogleFonts.quicksand(
-                                  fontSize: isSmallScreen ? 14.0 : 16.0,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.blue.shade900
-                              ),
+                              style: GoogleFonts.quicksand(fontSize: isSmallScreen ? 14.0 : 16.0, fontWeight: FontWeight.w800, color: Colors.blue.shade900),
                             ),
                             SizedBox(height: isSmallScreen ? 2.0 : 4.0),
                             Text(
                               'We\'re here to assist you',
-                              style: GoogleFonts.poppins(
-                                  fontSize: isSmallScreen ? 10.0 : 11.0,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey.shade600
-                              ),
+                              style: GoogleFonts.poppins(fontSize: isSmallScreen ? 10.0 : 11.0, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
                             ),
                             SizedBox(height: isSmallScreen ? 8.0 : 12.0),
+                            // Contact email
                             Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: isSmallScreen ? 10.0 : 12.0,
-                                  vertical: isSmallScreen ? 8.0 : 10.0
-                              ),
+                              padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 10.0 : 12.0, vertical: isSmallScreen ? 8.0 : 10.0),
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade50,
                                 borderRadius: BorderRadius.circular(8),
@@ -709,20 +633,12 @@ class _RulesScreenState extends State<RulesScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
-                                          Icons.email_outlined,
-                                          color: Colors.blue.shade800,
-                                          size: isSmallScreen ? 12.0 : 14.0
-                                      ),
+                                      Icon(Icons.email_outlined, color: Colors.blue.shade800, size: isSmallScreen ? 12.0 : 14.0),
                                       SizedBox(width: isSmallScreen ? 4.0 : 6.0),
                                       Flexible(
                                         child: SelectableText(
                                           'siddhanttimalsina2007@gmail.com',
-                                          style: GoogleFonts.poppins(
-                                              fontSize: isSmallScreen ? 9.0 : 10.0,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.blue.shade800
-                                          ),
+                                          style: GoogleFonts.poppins(fontSize: isSmallScreen ? 9.0 : 10.0, fontWeight: FontWeight.w600, color: Colors.blue.shade800),
                                         ),
                                       ),
                                     ],
@@ -730,11 +646,7 @@ class _RulesScreenState extends State<RulesScreen> {
                                   SizedBox(height: isSmallScreen ? 4.0 : 6.0),
                                   Text(
                                     'Tap to select and copy',
-                                    style: GoogleFonts.poppins(
-                                        fontSize: isSmallScreen ? 8.0 : 9.0,
-                                        color: Colors.grey.shade600,
-                                        fontStyle: FontStyle.italic
-                                    ),
+                                    style: GoogleFonts.poppins(fontSize: isSmallScreen ? 8.0 : 9.0, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
                                   ),
                                 ],
                               ),
@@ -742,22 +654,15 @@ class _RulesScreenState extends State<RulesScreen> {
                             SizedBox(height: isSmallScreen ? 8.0 : 12.0),
                             Divider(color: Colors.grey.shade200, height: 1),
                             SizedBox(height: isSmallScreen ? 8.0 : 10.0),
+                            // Footer information
                             Text(
                               '© 2024 All Rights Reserved',
-                              style: GoogleFonts.poppins(
-                                  fontSize: isSmallScreen ? 9.0 : 10.0,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.grey.shade700
-                              ),
+                              style: GoogleFonts.poppins(fontSize: isSmallScreen ? 9.0 : 10.0, fontWeight: FontWeight.w700, color: Colors.grey.shade700),
                             ),
                             SizedBox(height: isSmallScreen ? 1.0 : 2.0),
                             Text(
                               'Developed by Siddhant Timalsina',
-                              style: GoogleFonts.poppins(
-                                  fontSize: isSmallScreen ? 8.0 : 9.0,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey.shade600
-                              ),
+                              style: GoogleFonts.poppins(fontSize: isSmallScreen ? 8.0 : 9.0, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
                             ),
                           ],
                         ),
@@ -776,7 +681,7 @@ class _RulesScreenState extends State<RulesScreen> {
   }
 }
 
-// Extension to darken a color slightly since it's not a standard Color method
+/// Extension to darken a color slightly since it's not a standard Color method
 extension ColorExtension on Color {
   Color darken([double amount = .1]) {
     assert(amount >= 0 && amount <= 1);

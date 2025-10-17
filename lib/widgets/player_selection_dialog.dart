@@ -6,14 +6,12 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-// Assuming these models/widgets exist
 import '../model/user_model.dart';
 import '../screens/add_user_dialog.dart';
 
-// 🎨 GLOBAL COLORS
+// Color constants for consistent theming
 const Color _primaryDark = Color(0xFF1E3A8A);
 const Color _primaryMedium = Color(0xFF2563EB);
-// ... (All other constant definitions remain the same)
 const Color _primaryLight = Color(0xFF3B82F6);
 const Color _cyanDark = Color(0xFF0E7490);
 const Color _cyanLight = Color(0xFF06B6D4);
@@ -27,20 +25,23 @@ const Color _purple = Color(0xFF8B5CF6);
 const Color _pink = Color(0xFFEC4899);
 const Color _orange = Color(0xFFF97316);
 
-// --- GRADIENTS ---
+// Gradient definitions for visual elements
 const LinearGradient _primaryGradient = LinearGradient(colors: [_primaryDark, _primaryMedium, _primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight);
 const LinearGradient _confirmGradient = LinearGradient(colors: [Color(0xFF10B981), Color(0xFF06B6D4)], begin: Alignment.centerLeft, end: Alignment.centerRight);
 const LinearGradient _addPlayerIconGradient = LinearGradient(colors: [_purple, _pink], begin: Alignment.topLeft, end: Alignment.bottomRight);
 const LinearGradient _emptyStateIconGradient = LinearGradient(colors: [_pink, _orange], begin: Alignment.topLeft, end: Alignment.bottomRight);
 
-// --- TYPOGRAPHY & RADIUS ---
-final TextStyle _headingStyle = GoogleFonts.montserrat(fontWeight: FontWeight.w700, color: _darkText);
-final TextStyle _bodyStyle = GoogleFonts.inter(fontSize: 14, color: _darkText);
-final TextStyle _labelStyle = GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14, color: _textGrey);
+// Typography and styling constants
+// CHANGED: GoogleFonts.montserrat to GoogleFonts.poppins
+final TextStyle _headingStyle = GoogleFonts.poppins(fontWeight: FontWeight.w700, color: _darkText);
+final TextStyle _bodyStyle = GoogleFonts.poppins(fontSize: 14, color: _darkText);
+final TextStyle _labelStyle = GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 14, color: _textGrey);
 
 const double _smallRadius = 10.0;
 const double _dialogRadius = 16.0;
 
+/// Dialog for selecting players from available users
+/// Handles player selection with search functionality and validation
 class PlayerSelectionDialog extends StatefulWidget {
   final int numberOfPlayers;
   final List<String> alreadySelectedPlayers;
@@ -73,13 +74,13 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     super.dispose();
   }
 
-  // Reloads all users from Hive and initializes current selection
+  /// Loads all users from Hive storage and initializes current selection
   void _loadUsers() {
     final userBox = Hive.box<User>('usersBox');
     _allUsers = userBox.values.toList().cast<User>();
     _currentSelection.clear();
 
-    // Re-select users based on names passed in, but ignore placeholders.
+    // Re-select users based on names passed in, ignoring placeholders
     for (final playerName in widget.alreadySelectedPlayers) {
       final User? matchingUser = _allUsers.firstWhereOrNull((user) => user.username == playerName);
 
@@ -91,7 +92,7 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     _filterUsers();
   }
 
-  // Filters the user list based on the search query
+  /// Filters user list based on search query
   void _filterUsers() {
     final query = _searchController.text.toLowerCase();
 
@@ -108,13 +109,12 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     });
   }
 
-  // Shows the dialog to add a new user
+  /// Shows dialog to add new user to the system
   void _showAddUserDialog() {
     Get.dialog(
       AddUserDialog(
         onUserAdded: (username, imagePath) {
           final userBox = Hive.box<User>('usersBox');
-          // Assuming User model has an ID field (or Hive key is used for ID)
           final newUser = User(username: username, profileImagePath: imagePath, wins: 0, rank: userBox.length + 1);
           userBox.add(newUser);
           _loadUsers();
@@ -124,20 +124,18 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     );
   }
 
-  // CORE LOGIC: Manages selection list dynamically (add/remove)
+  /// Toggles player selection with validation for maximum players
   void _togglePlayerSelection(User user) {
-    if (user.username.startsWith('Player ')) return; // Cannot select a placeholder
+    if (user.username.startsWith('Player ')) return; // Cannot select placeholder users
 
     setState(() {
       final isSelected = _currentSelection.contains(user);
 
       if (isSelected) {
-        // Case 1: Deselecting the user.
         _currentSelection.remove(user);
       } else {
-        // Case 2: Selecting a new user.
         if (_currentSelection.length < widget.numberOfPlayers) {
-          _currentSelection.add(user); // Add to the end, preserving order
+          _currentSelection.add(user);
         } else {
           _showToast('Cannot Select More Than ${widget.numberOfPlayers} Players.');
         }
@@ -146,48 +144,34 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     _filterUsers();
   }
 
+  /// Checks if a user is currently selected
   bool _isPlayerSelected(User user) => _currentSelection.contains(user);
 
-  // 🚀 UPDATED: Custom toast/warning overlay positioned at the bottom with iOS-like outline
+  /// Shows temporary toast message for user feedback
   void _showToast(String message) {
-    // 1. Show the custom warning overlay at the bottom.
     Get.dialog(
       Container(
-        alignment: Alignment.bottomCenter, // Position the toast at the bottom
-        // Adjust margin for bottom placement
+        alignment: Alignment.bottomCenter,
         margin: const EdgeInsets.only(bottom: 40, left: 30, right: 30),
         child: Material(
           type: MaterialType.transparency,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFAFAFA), // Light, subtle off-white background
+              color: const Color(0xFFFAFAFA),
               borderRadius: BorderRadius.circular(12),
-              // Proper iOS-like outline (clean border)
-              border: Border.all(color: _errorRed.withOpacity(0.7), width: 1.2), // Thinner, red border
-              boxShadow: [
-                BoxShadow(
-                  color: _errorDark.withOpacity(0.1), // Subtler shadow
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
+              border: Border.all(color: _errorRed.withOpacity(0.7), width: 1.2),
+              boxShadow: [BoxShadow(color: _errorDark.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // MODIFIED: Changed icon to something more distinct
-                const Icon(
-                  Icons.warning_rounded, // Distinct 'cannot proceed' icon
-                  color: _errorDark,
-                  size: 22, // Slightly larger icon to stand out
-                ),
+                const Icon(Icons.warning_rounded, color: _errorDark, size: 22),
                 const SizedBox(width: 10),
                 Flexible(
                   child: Text(
                     message,
-                    // MODIFIED: Reduced font size to 13 and used a slightly bolder font for clarity.
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _darkText),
+                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _darkText),
                     textAlign: TextAlign.left,
                   ),
                 ),
@@ -196,41 +180,37 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
           ),
         ),
       ),
-      // Crucial: Use transparent barrier color and disable tap outside to mimic toast behavior
       barrierColor: Colors.transparent,
       barrierDismissible: false,
       useSafeArea: true,
     );
 
-    // 2. Auto dismiss after 3 seconds for a non-interruptive toast effect
+    // Auto-dismiss after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
-      // Safely close the top-most dialog (which should be the toast)
       if (Get.isDialogOpen!) {
         Get.back();
       }
     });
   }
 
-  // 🔥 Final confirmation logic
+  /// Validates and confirms player selection
   void _confirmSelection() {
     if (_currentSelection.length != widget.numberOfPlayers) {
       _showToast('Please select exactly ${widget.numberOfPlayers} players to confirm.');
       return;
     }
 
-    // ✅ The result is returned via Get.back().
     Get.back(result: _currentSelection);
   }
 
-  // 🚀 GetX way to cancel/close the dialog
+  /// Cancels selection and closes dialog
   void _cancelSelection() {
     Get.back(result: null);
   }
 
-  // -----------------------------------------------------------------------------------
-  // 🛠️ UI BUILDER METHODS 🛠️
-  // -----------------------------------------------------------------------------------
+  // UI Builder Methods
 
+  /// Builds dialog header with selection count and close button
   Widget _buildHeader(BuildContext context) {
     final selectedCount = _currentSelection.length;
     final totalCount = widget.numberOfPlayers;
@@ -259,38 +239,25 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // MODIFIED: Reduced size for "Select Players" text (was 16)
               Text('Select Players', style: _headingStyle.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
-              // MODIFIED: Selection count badge is now smaller and uses a custom divider.
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // Reduced padding (was 10, 3)
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  // Clean, very subtle background
                   color: isComplete ? _cyanLight.withOpacity(0.05) : Colors.white,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    // iOS-like: clean border and subtle width
-                    color: isComplete ? _cyanLight.withOpacity(0.8) : _iosBorder,
-                    width: 1.0,
-                  ),
+                  border: Border.all(color: isComplete ? _cyanLight.withOpacity(0.8) : _iosBorder, width: 1.0),
                 ),
                 child: Row(
-                  // Using a Row to correctly size the custom divider
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       '$selectedCount',
                       style: _bodyStyle.copyWith(fontWeight: FontWeight.w700, fontSize: 11, color: isComplete ? _cyanDark : _textGrey),
                     ),
-                    const SizedBox(width: 4), // Small spacing before divider
-                    // MODIFIED: Custom small vertical divider for modern look
-                    Container(
-                      height: 10, // Small, fixed height
-                      width: 1.0, // Thin width
-                      color: isComplete ? _cyanDark.withOpacity(0.6) : _iosBorder, // Color matching text/border
-                    ),
-                    const SizedBox(width: 4), // Small spacing after divider
+                    const SizedBox(width: 4),
+                    Container(height: 10, width: 1.0, color: isComplete ? _cyanDark.withOpacity(0.6) : _iosBorder),
+                    const SizedBox(width: 4),
                     Text(
                       '$totalCount',
                       style: _bodyStyle.copyWith(fontWeight: FontWeight.w700, fontSize: 11, color: _textGrey),
@@ -320,6 +287,7 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     );
   }
 
+  /// Builds search bar for filtering players
   Widget _buildSearchBar() {
     return TextField(
       controller: _searchController,
@@ -347,6 +315,7 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     );
   }
 
+  /// Builds scrollable list of available players
   Widget _buildPlayersList() {
     return Container(
       padding: const EdgeInsets.all(8),
@@ -364,7 +333,6 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
                 itemCount: _filteredUsers.length,
                 itemBuilder: (context, index) {
                   final user = _filteredUsers[index];
-
                   return _PlayerListItem(user: user, isSelected: _isPlayerSelected(user), onTap: () => _togglePlayerSelection(user));
                 },
               ),
@@ -372,6 +340,7 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     );
   }
 
+  /// Builds empty state when no players match search
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -395,6 +364,7 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
     );
   }
 
+  /// Builds action buttons row (Add Player and Confirm)
   Widget _buildActionsRow() {
     final isConfirmEnabled = _currentSelection.length == widget.numberOfPlayers;
     const double buttonHeight = 44.0;
@@ -433,7 +403,7 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
                   const SizedBox(width: 6),
                   Text(
                     text,
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: isFilled && isEnabled ? Colors.white : textColor.withOpacity(isEnabled ? 1.0 : 0.5), fontSize: 14),
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: isFilled && isEnabled ? Colors.white : textColor.withOpacity(isEnabled ? 1.0 : 0.5), fontSize: 14),
                   ),
                 ],
               ),
@@ -441,15 +411,6 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
           ),
         ),
       );
-    }
-
-    final realSelectedCount = _currentSelection.length;
-    String confirmMessage;
-
-    if (realSelectedCount < widget.numberOfPlayers) {
-      confirmMessage = 'Please select ${widget.numberOfPlayers - realSelectedCount} more players.';
-    } else {
-      confirmMessage = 'All players selected.';
     }
 
     return Container(
@@ -464,13 +425,11 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
         children: [
           _buildStyledButton(text: 'Add Player', icon: CupertinoIcons.person_add_solid, iconColor: _purple, textColor: _purple, borderColor: _purple.withOpacity(0.4), onTap: _showAddUserDialog, iconGradient: _addPlayerIconGradient, isEnabled: true),
           const SizedBox(width: 8),
-          _buildStyledButton(text: 'Confirm', icon: Icons.verified_rounded, iconColor: _primaryMedium, textColor: isConfirmEnabled ? Colors.white : _darkText, borderColor: isConfirmEnabled ? Colors.transparent : _iosBorder, onTap: isConfirmEnabled ? _confirmSelection : () => _showToast(confirmMessage), gradient: _confirmGradient, isFilled: isConfirmEnabled, isEnabled: isConfirmEnabled),
+          _buildStyledButton(text: 'Confirm', icon: Icons.verified_rounded, iconColor: _primaryMedium, textColor: isConfirmEnabled ? Colors.white : _darkText, borderColor: isConfirmEnabled ? Colors.transparent : _iosBorder, onTap: isConfirmEnabled ? _confirmSelection : () => _showToast('Please select ${widget.numberOfPlayers - _currentSelection.length} more players.'), gradient: _confirmGradient, isFilled: isConfirmEnabled, isEnabled: isConfirmEnabled),
         ],
       ),
     );
   }
-
-  // -----------------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -492,7 +451,8 @@ class _PlayerSelectionDialogState extends State<PlayerSelectionDialog> {
   }
 }
 
-// --- Player List Item Card (Final) ---
+/// Individual player list item widget
+/// Displays user information and selection state
 class _PlayerListItem extends StatelessWidget {
   final User user;
   final bool isSelected;
@@ -513,53 +473,31 @@ class _PlayerListItem extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: isPlaceholder ? null : onTap, // Prevent clicking a placeholder
+          onTap: isPlaceholder ? null : onTap,
           borderRadius: BorderRadius.circular(_smallRadius),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              // Card background is always white
               color: Colors.white,
               borderRadius: BorderRadius.circular(_smallRadius),
-              // MODIFIED: Only the border is highlighted with CYAN color
-              border: Border.all(
-                color: isSelected ? _cyanLight : _iosBorder, // Highlight with Cyan
-                width: isSelected ? selectedBorderWidth : normalBorderWidth,
-              ),
-              // Subtle shadow, slightly more defined and CYAN-based for selected
-              boxShadow: [
-                BoxShadow(
-                  color: isSelected ? _cyanDark.withOpacity(0.2) : Colors.black.withOpacity(0.03), // Cyan-based shadow
-                  blurRadius: isSelected ? 8 : 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(color: isSelected ? _cyanLight : _iosBorder, width: isSelected ? selectedBorderWidth : normalBorderWidth),
+              boxShadow: [BoxShadow(color: isSelected ? _cyanDark.withOpacity(0.2) : Colors.black.withOpacity(0.03), blurRadius: isSelected ? 8 : 4, offset: const Offset(0, 2))],
             ),
             child: Row(
               children: [
-                // Profile Picture/Icon
                 Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    // Border for the icon container is highlighted with CYAN
                     border: Border.all(color: isSelected ? _cyanLight : _iosBorder.withOpacity(0.8), width: 1.5),
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))],
                   ),
                   child: ClipOval(
-                    child: user.profileImagePath != null
-                        ? Image.file(File(user.profileImagePath!), fit: BoxFit.cover)
-                        : Icon(
-                            isPlaceholder ? Icons.person_outline : Icons.person,
-                            // Icon color also reflects selection state with Cyan
-                            color: isSelected ? _cyanLight : _primaryMedium.withOpacity(0.6),
-                            size: 20,
-                          ),
+                    child: user.profileImagePath != null ? Image.file(File(user.profileImagePath!), fit: BoxFit.cover) : Icon(isPlaceholder ? Icons.person_outline : Icons.person, color: isSelected ? _cyanLight : _primaryMedium.withOpacity(0.6), size: 20),
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Username
                 Expanded(
                   child: Text(
                     user.username,
@@ -567,7 +505,6 @@ class _PlayerListItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // MODIFIED: Selection Indicator is now a Verified Tick and colored with dark cyan
                 if (isSelected) const Icon(Icons.verified_rounded, color: _cyanDark, size: 22) else if (!isPlaceholder) const Icon(CupertinoIcons.circle, color: _borderLightBlue, size: 22),
               ],
             ),

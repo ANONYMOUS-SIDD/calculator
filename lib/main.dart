@@ -1,129 +1,131 @@
-// Required for PlayerController setup
+// Core Flutter imports
+// Controller imports
 import 'package:calculators/controllers/player_controller.dart';
-// NEW IMPORT FOR THE CONTROLLER THAT WAS CAUSING THE ERROR
 import 'package:calculators/controllers/user_list_controller.dart';
 import 'package:calculators/model/game_history_models.dart';
+import 'package:calculators/model/marriage_game_history.dart';
+// Model imports
 import 'package:calculators/model/user_model.dart';
+// Repository imports
 import 'package:calculators/repositories/history_repository.dart';
+// Screen imports
 import 'package:calculators/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
+// State management imports
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+// Local storage imports
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'model/marriage_game_history.dart';
-
 void main() async {
-  // 1. Ensure Flutter framework is initialized before any async operations
+  /// Ensure Flutter framework is initialized before any async operations
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
 
-  // 2. Start the application with the initialization wrapper
+  /// Start the application with the initialization wrapper
   runApp(const AppInitializationWidget());
 }
 
-// -------------------------------------------------------------
-// WIDGET TO HANDLE ASYNCHRONOUS INITIALIZATION (CRITICAL FOR HIVE & GETX)
-// -------------------------------------------------------------
+/// Widget to handle asynchronous initialization for Hive & GetX
+/// This ensures all dependencies are properly set up before app starts
 class AppInitializationWidget extends StatelessWidget {
   const AppInitializationWidget({super.key});
 
-  // Function to encapsulate all setup that must complete before the app runs
+  /// Initialize all application dependencies including:
+  /// - Hive database setup and adapter registration
+  /// - Data migration handling
+  /// - Controller initialization
+  /// - Repository setup
   Future<void> _initialize() async {
     try {
-      // 1. Initialize Hive Flutter and Register Adapters
+      // Initialize Hive Flutter
       await Hive.initFlutter();
 
-      // Register existing User adapter
-      if (!Hive.isAdapterRegistered(0)) {
-        Hive.registerAdapter(UserAdapter());
-      }
+      // Register Hive adapters for data persistence
+      _registerHiveAdapters();
 
-      // REGISTER NEW HISTORY ADAPTERS - ADD THESE LINES
-      if (!Hive.isAdapterRegistered(1)) {
-        Hive.registerAdapter(CallBreakGameHistoryAdapter());
-      }
-      if (!Hive.isAdapterRegistered(2)) {
-        Hive.registerAdapter(PlayerOverallStatsAdapter());
-      }
-      // ADD THIS NEW ADAPTER REGISTRATION
-      if (!Hive.isAdapterRegistered(3)) {
-        Hive.registerAdapter(RoundHistoryDataAdapter());
-      }
-      // ADD MARRIAGE GAME ADAPTERS - BOTH ARE NEEDED
-      if (!Hive.isAdapterRegistered(4)) {
-        Hive.registerAdapter(MarriageGameHistoryAdapter());
-      }
-      // ADD THIS LINE FOR MARRIAGE PLAYER HISTORY (typeId 5)
-      if (!Hive.isAdapterRegistered(5)) {
-        Hive.registerAdapter(MarriagePlayerHistoryAdapter());
-      }
-
-      // 2. SMART DATA MIGRATION - Only clear if there's a schema conflict
+      // Handle data migration for schema changes
       await _handleDataMigration();
 
-      // 3. Open the critical boxes - ADD THE NEW BOXES
-      await Hive.openBox<User>('usersBox');
-      await Hive.openBox('callBreakGames');
-      await Hive.openBox<CallBreakGameHistory>('callBreakGameHistory');
-      await Hive.openBox<PlayerOverallStats>('playerStats');
-      await Hive.openBox<MarriageGameHistory>('marriageGameHistory');
+      // Open all required Hive boxes
+      await _openHiveBoxes();
 
-      // 4. INITIALIZE HISTORY REPOSITORY - ADD THIS LINE
+      // Initialize history repository
       await HistoryRepository.init();
 
-      final userBox = Hive.box<User>('usersBox');
-      const int defaultPlayerCount = 4; // Target game size
-
-      // 5. Initial data check: Ensure we have enough users to start a game
-      if (userBox.isEmpty) {
-        // Keep the box empty - users will be added manually through the app
-        debugPrint('✅ User box is empty - ready for manual user creation');
-        // No default users will be created
-      }
-
-      // Initialize the PlayerController
-      Get.put(PlayerController());
-
-      // 🔑 FIX: INITIALIZE THE USER LIST CONTROLLER HERE
-      // This ensures it is available via Get.find() anywhere in the app, including HomeScreen's initState.
-      Get.put(UserListController());
+      // Initialize application controllers
+      _initializeControllers();
     } catch (e) {
-      debugPrint('CRITICAL ERROR during initialization: $e');
-      // If there's still an error, try one more time with clean data
+      // If initialization fails, attempt clean start
       await _forceCleanStart();
     }
   }
 
-  // Smart data migration - only clears data if there's a schema conflict
+  /// Register all Hive type adapters for data serialization
+  void _registerHiveAdapters() {
+    if (!Hive.isAdapterRegistered(0)) {
+      Hive.registerAdapter(UserAdapter());
+    }
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(CallBreakGameHistoryAdapter());
+    }
+    if (!Hive.isAdapterRegistered(2)) {
+      Hive.registerAdapter(PlayerOverallStatsAdapter());
+    }
+    if (!Hive.isAdapterRegistered(3)) {
+      Hive.registerAdapter(RoundHistoryDataAdapter());
+    }
+    if (!Hive.isAdapterRegistered(4)) {
+      Hive.registerAdapter(MarriageGameHistoryAdapter());
+    }
+    if (!Hive.isAdapterRegistered(5)) {
+      Hive.registerAdapter(MarriagePlayerHistoryAdapter());
+    }
+  }
+
+  /// Open all required Hive boxes for data storage
+  Future<void> _openHiveBoxes() async {
+    await Hive.openBox<User>('usersBox');
+    await Hive.openBox('callBreakGames');
+    await Hive.openBox<CallBreakGameHistory>('callBreakGameHistory');
+    await Hive.openBox<PlayerOverallStats>('playerStats');
+    await Hive.openBox<MarriageGameHistory>('marriageGameHistory');
+  }
+
+  /// Initialize GetX controllers for state management
+  void _initializeControllers() {
+    Get.put(PlayerController());
+    Get.put(UserListController());
+  }
+
+  /// Handle data migration by detecting schema conflicts
+  /// Clears old data only when incompatible schema is detected
   Future<void> _handleDataMigration() async {
     try {
-      // Try to open boxes normally first
+      // Attempt to open boxes to check for schema compatibility
       await Hive.openBox<CallBreakGameHistory>('callBreakGameHistory');
       await Hive.openBox<PlayerOverallStats>('playerStats');
-      debugPrint('✅ Existing data loaded successfully');
     } catch (e) {
-      // If there's an error, it's likely a schema conflict - clear and retry
-      debugPrint('🔄 Schema conflict detected, clearing old data: $e');
+      // Clear incompatible data on schema conflict
       try {
         await Hive.deleteBoxFromDisk('callBreakGameHistory');
         await Hive.deleteBoxFromDisk('playerStats');
-        debugPrint('✅ Cleared incompatible old data');
       } catch (deleteError) {
-        debugPrint('ℹ️ No boxes to delete or error deleting: $deleteError');
+        // Ignore deletion errors for non-existent boxes
       }
     }
   }
 
-  // Force clean start as last resort
+  /// Force clean start as last resort when normal initialization fails
+  /// Deletes all existing data and recreates boxes
   Future<void> _forceCleanStart() async {
-    debugPrint('🔄 Attempting force clean start...');
     try {
       await Hive.deleteBoxFromDisk('callBreakGameHistory');
       await Hive.deleteBoxFromDisk('playerStats');
       await Hive.openBox<CallBreakGameHistory>('callBreakGameHistory');
       await Hive.openBox<PlayerOverallStats>('playerStats');
-      debugPrint('✅ Force clean start completed');
     } catch (e) {
-      debugPrint('❌ Even force clean start failed: $e');
+      // Re-throw error if clean start also fails
       rethrow;
     }
   }
@@ -133,6 +135,7 @@ class AppInitializationWidget extends StatelessWidget {
     return FutureBuilder(
       future: _initialize(),
       builder: (context, snapshot) {
+        // Show error screen if initialization fails
         if (snapshot.hasError) {
           return MaterialApp(
             home: Scaffold(
@@ -158,7 +161,7 @@ class AppInitializationWidget extends StatelessWidget {
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
-                        // Restart the app
+                        // Restart the app on retry
                         runApp(const AppInitializationWidget());
                       },
                       child: const Text('Retry'),
@@ -170,33 +173,20 @@ class AppInitializationWidget extends StatelessWidget {
           );
         }
 
+        // Show splash screen during initialization
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const MaterialApp(
-            home: Scaffold(
-              backgroundColor: Color(0xFF1A243F),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(color: Colors.blue),
-                    SizedBox(height: 20),
-                    Text('Loading Calculator App...', style: TextStyle(color: Colors.white, fontSize: 16)),
-                  ],
-                ),
-              ),
-            ),
-          );
+          return const MaterialApp(debugShowCheckedModeBanner: false, home: SplashScreen());
         }
 
+        // Return main app once initialization is complete
         return const MyApp();
       },
     );
   }
 }
 
-// -------------------------------------------------------------
-// YOUR EXISTING MYAPP WIDGET
-// -------------------------------------------------------------
+/// Main application widget
+/// Sets up theme and initial screen
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 

@@ -9,6 +9,8 @@ import '../../model/user_model.dart';
 import 'bid_picker_dialog.dart';
 import 'ot_picker_dialog.dart';
 
+/// Player card widget that displays player information and interaction buttons
+/// Shows player profile, current bid status, and BID/OT action buttons
 class PlayerCard extends StatelessWidget {
   final int index;
   final User player;
@@ -99,20 +101,7 @@ class PlayerCard extends StatelessWidget {
                 _buildEnhancedActionButton(icon: Icons.gavel_rounded, label: 'BID', isActive: bidPhase && !bidCompleted, activeColor: Colors.pink, inactiveColor: Colors.blue, onPressed: bidPhase && !bidCompleted ? () => _showBidPicker(context, index, tag) : null, buttonWidth: buttonWidth, buttonHeight: buttonHeight, iconSize: iconSize, fontSize: fontSize, borderRadius: borderRadius, horizontalPadding: horizontalPadding),
                 SizedBox(width: isSmallScreen ? 4 : 6),
 
-                _buildEnhancedActionButton(
-                  icon: Icons.auto_graph_rounded,
-                  label: 'OT',
-                  isActive: otPhase && !otCompleted,
-                  activeColor: Colors.green,
-                  inactiveColor: Colors.cyan, // Changed from Colors.orange to Colors.cyan
-                  onPressed: otPhase && !otCompleted ? () => _showOTPicker(context, index, tag) : null,
-                  buttonWidth: buttonWidth,
-                  buttonHeight: buttonHeight,
-                  iconSize: iconSize,
-                  fontSize: fontSize,
-                  borderRadius: borderRadius,
-                  horizontalPadding: horizontalPadding,
-                ),
+                _buildEnhancedActionButton(icon: Icons.auto_graph_rounded, label: 'OT', isActive: otPhase && !otCompleted, activeColor: Colors.green, inactiveColor: Colors.cyan, onPressed: otPhase && !otCompleted ? () => _showOTPicker(context, index, tag) : null, buttonWidth: buttonWidth, buttonHeight: buttonHeight, iconSize: iconSize, fontSize: fontSize, borderRadius: borderRadius, horizontalPadding: horizontalPadding),
               ],
             ),
           ],
@@ -121,6 +110,7 @@ class PlayerCard extends StatelessWidget {
     });
   }
 
+  /// Builds the player profile circle with image or initials
   Widget _buildPlayerProfile() {
     return Container(
       width: 42,
@@ -134,6 +124,7 @@ class PlayerCard extends StatelessWidget {
     );
   }
 
+  /// Builds profile image with file check and fallback
   Widget _buildProfileImage() {
     if (player.profileImagePath != null && player.profileImagePath!.isNotEmpty) {
       return _buildFileImage();
@@ -142,6 +133,7 @@ class PlayerCard extends StatelessWidget {
     }
   }
 
+  /// Builds image from file with error handling
   Widget _buildFileImage() {
     final file = File(player.profileImagePath!);
 
@@ -158,6 +150,7 @@ class PlayerCard extends StatelessWidget {
     }
   }
 
+  /// Builds default avatar with gradient and initials
   Widget _buildDefaultAvatar() {
     return Container(
       decoration: BoxDecoration(
@@ -172,6 +165,7 @@ class PlayerCard extends StatelessWidget {
     );
   }
 
+  /// Extracts initials from player name for avatar display
   String _getInitials(String name) {
     final names = name.split(' ');
     if (names.length >= 2) {
@@ -182,6 +176,7 @@ class PlayerCard extends StatelessWidget {
     return '?';
   }
 
+  /// Builds the bid label text
   Widget _buildBidLabel(bool isSmallScreen) {
     return Text(
       'Current Bid',
@@ -189,6 +184,7 @@ class PlayerCard extends StatelessWidget {
     );
   }
 
+  /// Builds the bid value display with color coding
   Widget _buildBidValue(int currentBid, int previousBid, bool isSmallScreen) {
     final hasCurrentBid = currentBid > 0;
     final displayValue = hasCurrentBid ? currentBid : (previousBid > 0 ? previousBid : 0);
@@ -201,12 +197,11 @@ class PlayerCard extends StatelessWidget {
     );
   }
 
+  /// Builds enhanced action button with gradient and shadow effects
   Widget _buildEnhancedActionButton({required IconData icon, required String label, required bool isActive, required Color activeColor, required Color inactiveColor, required VoidCallback? onPressed, required double buttonWidth, required double buttonHeight, required double iconSize, required double fontSize, required double borderRadius, required double horizontalPadding}) {
     // Special handling for OT button in disabled mode - using cyan colors
     final bool isOtButton = label == 'OT';
-    final Color disabledOutlineColor = isOtButton
-        ? Colors.cyan[700]! // Cyan color for OT outline
-        : inactiveColor.withOpacity(0.6);
+    final Color disabledOutlineColor = isOtButton ? Colors.cyan[700]! : inactiveColor.withOpacity(0.6);
 
     return Container(
       width: buttonWidth,
@@ -215,19 +210,7 @@ class PlayerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         gradient: isActive ? LinearGradient(colors: [activeColor, Color.alphaBlend(activeColor.withOpacity(0.7), activeColor)], begin: Alignment.topLeft, end: Alignment.bottomRight) : LinearGradient(colors: [Colors.grey.shade50, Colors.grey.shade100], begin: Alignment.topLeft, end: Alignment.bottomRight),
         border: Border.all(color: isActive ? activeColor.withOpacity(0.9) : disabledOutlineColor, width: isActive ? 1.5 : 1.2),
-        boxShadow: [
-          if (isActive)
-            BoxShadow(color: activeColor.withOpacity(0.3), blurRadius: 5, spreadRadius: 0.5, offset: const Offset(0, 2))
-          else
-            BoxShadow(
-              color: isOtButton
-                  ? Colors.cyan.withOpacity(0.2) // Cyan glow for OT
-                  : inactiveColor.withOpacity(0.2),
-              blurRadius: 3,
-              spreadRadius: 0.5,
-              offset: const Offset(0, 1.5),
-            ),
-        ],
+        boxShadow: [if (isActive) BoxShadow(color: activeColor.withOpacity(0.3), blurRadius: 5, spreadRadius: 0.5, offset: const Offset(0, 2)) else BoxShadow(color: isOtButton ? Colors.cyan.withOpacity(0.2) : inactiveColor.withOpacity(0.2), blurRadius: 3, spreadRadius: 0.5, offset: const Offset(0, 1.5))],
       ),
       child: Material(
         color: Colors.transparent,
@@ -248,7 +231,7 @@ class PlayerCard extends StatelessWidget {
                   color: isActive
                       ? Colors.white
                       : isOtButton
-                      ? Colors.cyan[700]! // Cyan icon for OT when disabled
+                      ? Colors.cyan[700]!
                       : inactiveColor.withOpacity(0.8),
                 ),
                 SizedBox(width: horizontalPadding - 1),
@@ -264,6 +247,7 @@ class PlayerCard extends StatelessWidget {
     );
   }
 
+  /// Shows bid picker dialog for the player
   void _showBidPicker(BuildContext context, int playerIndex, String tag) {
     showDialog(
       context: context,
@@ -273,6 +257,7 @@ class PlayerCard extends StatelessWidget {
     );
   }
 
+  /// Shows OT (overtricks) picker dialog for the player
   void _showOTPicker(BuildContext context, int playerIndex, String tag) {
     showDialog(
       context: context,

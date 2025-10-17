@@ -10,6 +10,8 @@ import 'package:table_calendar/table_calendar.dart';
 import '../controllers/user_stats_controller.dart';
 import '../model/user_model.dart';
 
+/// Dialog widget to display user statistics for both Marriage and Callbreak games
+/// Shows performance metrics, date range filtering, and visual statistics
 class UserStatsDialog extends StatelessWidget {
   final String userName;
 
@@ -47,13 +49,12 @@ class UserStatsDialog extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Header with reduced font size and better color
+                      /// Header section with user profile and close button
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
-                              // Profile Avatar with left margin
                               Container(
                                 margin: const EdgeInsets.only(left: 4),
                                 width: isSmallScreen ? 36 : 40,
@@ -66,19 +67,12 @@ class UserStatsDialog extends StatelessWidget {
                                 child: _buildProfileAvatar(userName),
                               ),
                               const SizedBox(width: 12),
-                              // Name with reduced font size and better color
                               Text(
                                 userName,
-                                style: GoogleFonts.quicksand(
-                                  fontSize: isSmallScreen ? 13 : 16,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.blue.shade800, // Better color
-                                  letterSpacing: -0.5,
-                                ),
+                                style: GoogleFonts.quicksand(fontSize: isSmallScreen ? 13 : 16, fontWeight: FontWeight.w900, color: Colors.blue.shade800, letterSpacing: -0.5),
                               ),
                             ],
                           ),
-                          // Close Button
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -105,12 +99,12 @@ class UserStatsDialog extends StatelessWidget {
 
                       const SizedBox(height: 16),
 
-                      // Date Picker Section
+                      /// Date range selection section
                       _buildDatePickerSection(context, controller, isSmallScreen),
 
                       const SizedBox(height: 16),
 
-                      // Content Area
+                      /// Main content area with game statistics
                       controller.isLoading.value ? _buildModernLoading(isSmallScreen) : _buildContent(controller, isSmallScreen),
                     ],
                   ),
@@ -123,6 +117,7 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Builds profile avatar from stored image or falls back to initials
   Widget _buildProfileAvatar(String playerName) {
     try {
       final userBox = Hive.box<User>('usersBox');
@@ -148,6 +143,7 @@ class UserStatsDialog extends StatelessWidget {
     }
   }
 
+  /// Creates fallback avatar with gradient background and user initials
   Widget _buildFallbackAvatar(String playerName) {
     return Container(
       decoration: BoxDecoration(
@@ -162,6 +158,7 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Extracts initials from user name for avatar display
   String _getInitials(String name) {
     final names = name.split(' ');
     if (names.length >= 2) {
@@ -172,6 +169,7 @@ class UserStatsDialog extends StatelessWidget {
     return '?';
   }
 
+  /// Builds date picker section with calendar icon and range selection
   Widget _buildDatePickerSection(BuildContext context, UserStatsController controller, bool isSmallScreen) {
     final dateRange = controller.selectedDateRange.value;
     final isToday = controller.isToday.value;
@@ -200,7 +198,6 @@ class UserStatsDialog extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Date Icon in Rectangle - Deep blue gradient
           Container(
             width: isSmallScreen ? 40 : 44,
             height: isSmallScreen ? 40 : 44,
@@ -213,7 +210,6 @@ class UserStatsDialog extends StatelessWidget {
             child: Icon(Icons.calendar_month_rounded, size: isSmallScreen ? 18 : 20, color: Colors.white),
           ),
 
-          // Date Text Section
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -237,7 +233,7 @@ class UserStatsDialog extends StatelessWidget {
             ),
           ),
 
-          // Action Buttons
+          /// Action buttons for date range control
           Row(
             children: [
               Container(
@@ -289,23 +285,15 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Builds main content area with game statistics
   Widget _buildContent(UserStatsController controller, bool isSmallScreen) {
     final marriageStats = controller.marriageStats.value;
     final callbreakStats = controller.callbreakStats.value;
 
-    return Column(
-      children: [
-        // Marriage Performance Section
-        _buildMarriageSection(marriageStats, isSmallScreen),
-
-        const SizedBox(height: 12),
-
-        // Callbreak Performance Section
-        _buildCallbreakSection(callbreakStats, isSmallScreen),
-      ],
-    );
+    return Column(children: [_buildMarriageSection(marriageStats, isSmallScreen), const SizedBox(height: 12), _buildCallbreakSection(callbreakStats, isSmallScreen)]);
   }
 
+  /// Builds Marriage game statistics section
   Widget _buildMarriageSection(MarriageStats? stats, bool isSmallScreen) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -321,7 +309,6 @@ class UserStatsDialog extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
           Row(
             children: [
               Container(
@@ -344,13 +331,11 @@ class UserStatsDialog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Stats Cards - Ultra thin outlines
           if (stats == null || stats.totalMatches == 0)
-            _buildNoDataWidget('No marriage games found', isSmallScreen) // Now uses the same centered widget
+            _buildNoDataWidget('No marriage games found', isSmallScreen)
           else
             Column(
               children: [
-                // First Row - 3 cards without icons
                 Row(
                   children: [
                     Expanded(
@@ -367,7 +352,6 @@ class UserStatsDialog extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                // Second Row - 2 cards with icons
                 Row(
                   children: [
                     Expanded(
@@ -386,6 +370,7 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Builds Callbreak game statistics section
   Widget _buildCallbreakSection(CallbreakStats? stats, bool isSmallScreen) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -401,7 +386,6 @@ class UserStatsDialog extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
           Row(
             children: [
               Container(
@@ -431,14 +415,12 @@ class UserStatsDialog extends StatelessWidget {
           else
             Column(
               children: [
-                // Position Ranking Header
                 Text(
                   'POSITION RANKING',
                   style: GoogleFonts.poppins(fontSize: isSmallScreen ? 10 : 12, fontWeight: FontWeight.w700, color: Colors.blue.shade800, letterSpacing: 0.8),
                 ),
                 const SizedBox(height: 8),
 
-                // Medal-like UI for position ranking
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                   decoration: BoxDecoration(
@@ -460,7 +442,6 @@ class UserStatsDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Performance Summary
                 Row(
                   children: [
                     Expanded(
@@ -479,20 +460,14 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Builds stat card without icon for simple metric display
   Widget _buildStatCardNoIcon({required String value, required String label, required List<Color> gradientColors, required bool isSmallScreen}) {
     return Container(
-      padding: const EdgeInsets.all(1.0), // Ultra thin outline
+      padding: const EdgeInsets.all(1.0),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: gradientColors.first.withOpacity(0.2), // Reduced opacity
-            blurRadius: 4, // Reduced blur
-            spreadRadius: 0.3, // Reduced spread
-            offset: const Offset(0, 1), // Reduced offset
-          ),
-        ],
+        boxShadow: [BoxShadow(color: gradientColors.first.withOpacity(0.2), blurRadius: 4, spreadRadius: 0.3, offset: const Offset(0, 1))],
       ),
       child: Container(
         padding: const EdgeInsets.all(6),
@@ -517,9 +492,10 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Builds stat card with icon for enhanced visual metrics
   Widget _buildStatCardWithIcon({required IconData icon, required String value, required String label, required List<Color> gradientColors, required bool isSmallScreen}) {
     return Container(
-      padding: const EdgeInsets.all(1.0), // Ultra thin outline
+      padding: const EdgeInsets.all(1.0),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(10),
@@ -532,7 +508,6 @@ class UserStatsDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon in gradient container
             Container(
               width: isSmallScreen ? 20 : 24,
               height: isSmallScreen ? 20 : 24,
@@ -544,7 +519,6 @@ class UserStatsDialog extends StatelessWidget {
               child: Icon(icon, size: isSmallScreen ? 10 : 12, color: Colors.white),
             ),
             const SizedBox(width: 6),
-            // Text and Value
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -569,6 +543,7 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Builds medal card for position ranking display
   Widget _buildMedalCard({required String position, required String count, required Color medalColor, required bool isSmallScreen}) {
     return Expanded(
       child: Container(
@@ -583,7 +558,6 @@ class UserStatsDialog extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Trophy icon
             Container(
               width: isSmallScreen ? 20 : 24,
               height: isSmallScreen ? 20 : 24,
@@ -597,13 +571,11 @@ class UserStatsDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            // Position text
             Text(
               position,
               style: GoogleFonts.poppins(fontSize: isSmallScreen ? 8 : 10, fontWeight: FontWeight.w700, color: medalColor),
             ),
             const SizedBox(height: 2),
-            // Count
             Text(
               count,
               style: GoogleFonts.quicksand(fontSize: isSmallScreen ? 10 : 12, fontWeight: FontWeight.w800, color: medalColor),
@@ -614,10 +586,11 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Builds empty state widget when no data is available
   Widget _buildNoDataWidget(String message, bool isSmallScreen) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20), // Equal padding from all sides
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFF),
         borderRadius: BorderRadius.circular(12),
@@ -638,6 +611,7 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Builds loading indicator for statistics calculation
   Widget _buildModernLoading(bool isSmallScreen) {
     return Container(
       height: 200,
@@ -668,6 +642,7 @@ class UserStatsDialog extends StatelessWidget {
     );
   }
 
+  /// Shows premium date picker dialog for range selection
   void _showPremiumDatePicker(BuildContext context, UserStatsController controller, bool isSmallScreen) {
     final now = DateTime.now();
     final firstDate = DateTime(now.year - 1);
@@ -696,7 +671,6 @@ class UserStatsDialog extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Calendar with elevated border
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
@@ -711,7 +685,6 @@ class UserStatsDialog extends StatelessWidget {
                       availableGestures: AvailableGestures.all,
                       selectedDayPredicate: (day) => false,
                       onDaySelected: (selectedDay, focusedDay) {
-                        // Disable future dates
                         if (selectedDay.isAfter(DateTime.now())) {
                           return;
                         }
@@ -735,25 +708,19 @@ class UserStatsDialog extends StatelessWidget {
                         }
                       },
                       onRangeSelected: (start, end, focusedDay) {
-                        // Not used since we're handling selection manually
+                        // Manual selection handled in onDaySelected
                       },
                       enabledDayPredicate: (day) {
-                        // Disable future dates
                         return !day.isAfter(DateTime.now());
                       },
                       calendarStyle: CalendarStyle(
-                        // Disabled date styling
                         disabledTextStyle: TextStyle(color: Colors.grey.shade400),
-
-                        // Today's date styling
                         todayDecoration: BoxDecoration(
                           gradient: LinearGradient(colors: [Colors.orange.shade400, Colors.red.shade400], begin: Alignment.topLeft, end: Alignment.bottomRight),
                           shape: BoxShape.circle,
                           boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.4), blurRadius: 6, offset: const Offset(0, 2))],
                         ),
                         todayTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-
-                        // Selected range styling
                         selectedDecoration: BoxDecoration(
                           gradient: LinearGradient(colors: [Colors.blue.shade900, Colors.blue.shade600], begin: Alignment.topLeft, end: Alignment.bottomRight),
                           shape: BoxShape.circle,
@@ -766,19 +733,11 @@ class UserStatsDialog extends StatelessWidget {
                           gradient: LinearGradient(colors: [Colors.blue.shade900, Colors.blue.shade600], begin: Alignment.topLeft, end: Alignment.bottomRight),
                           shape: BoxShape.circle,
                         ),
-
-                        // Within range styling
                         withinRangeDecoration: BoxDecoration(color: Colors.blue.shade100, shape: BoxShape.circle),
-
-                        // Outside range styling
                         outsideDecoration: BoxDecoration(color: Colors.grey.withOpacity(0.05), shape: BoxShape.circle),
                         outsideTextStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
-
-                        // Default styling
                         defaultTextStyle: GoogleFonts.poppins(color: Colors.blue.shade900, fontWeight: FontWeight.w500),
                         weekendTextStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500),
-
-                        // Range highlight indication
                         rangeHighlightColor: Colors.blueAccent.withOpacity(0.1),
                       ),
                       headerStyle: HeaderStyle(
@@ -796,7 +755,6 @@ class UserStatsDialog extends StatelessWidget {
                     ),
                   ),
 
-                  // Buttons
                   Container(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: Row(
@@ -818,10 +776,10 @@ class UserStatsDialog extends StatelessWidget {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Container(
-                                      width: 12, // Further reduced size
-                                      height: 12, // Further reduced size
+                                      width: 12,
+                                      height: 12,
                                       decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white),
-                                      child: Icon(Icons.cancel, size: 10, color: Colors.purple.shade700), // Further reduced icon size
+                                      child: Icon(Icons.cancel, size: 10, color: Colors.purple.shade700),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(

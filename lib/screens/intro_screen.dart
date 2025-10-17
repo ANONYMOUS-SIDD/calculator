@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-/// Modern IntroScreen for Marriage Calculator - Advanced 3D Effects
+/// Modern IntroScreen for Marriage Calculator with 3D effects and animations
 class IntroScreen extends StatefulWidget {
   final VoidCallback? onFinish;
 
@@ -20,22 +20,20 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
   final PageController _controller = PageController();
   int _page = 0;
 
-  // Global Animations
+  // Animation controllers
   late AnimationController _entranceController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-
-  // Lottie Floating Animation
   late AnimationController _lottieFloatController;
   late Animation<double> _lottieFloatAnimation;
 
-  // Define colors
+  // Color constants
   static const Color _cardBaseColor = Color(0xFF001F52);
   static const Color _glassGradientStart = Color(0xFF98E6FF);
   static const Color _glassGradientEnd = Color(0xFF6C8CFF);
   static const Color _neumorphicHighlight = Color(0xFF003A7F);
 
-  // Background glow colors linked to page index
+  // Background glow colors for each page
   final List<Color> _glowColors = [
     Colors.lightBlue.shade700, // Page 0: WELCOME
     Colors.purple.shade700, // Page 1: EXPLORE
@@ -48,7 +46,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
   void initState() {
     super.initState();
 
-    // 1. Entrance Animation setup
+    // Entrance animation setup
     _entranceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..forward();
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -57,6 +55,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
         curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
       ),
     );
+
     _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _entranceController,
@@ -64,12 +63,13 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
       ),
     );
 
-    // 2. Floating Lottie Animation setup
+    // Floating Lottie animation setup
     _lottieFloatController = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
 
     _lottieFloatAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _lottieFloatController, curve: Curves.easeInOutSine));
   }
 
+  /// Navigates to next page or finishes intro
   void _next() {
     HapticFeedback.lightImpact();
     if (_page < _pages.length - 1) {
@@ -79,6 +79,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
     }
   }
 
+  /// Skips to the last page
   void _skipToEnd() {
     HapticFeedback.lightImpact();
     _controller.animateToPage(_pages.length - 1, duration: const Duration(milliseconds: 600), curve: Curves.easeInOutCubic);
@@ -92,7 +93,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
     super.dispose();
   }
 
-  /// Dynamic Glowing Background
+  /// Builds dynamic glowing background based on current page
   Widget _background() {
     double page = 0;
     if (_controller.hasClients) {
@@ -114,7 +115,6 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
         gradient: LinearGradient(colors: [Color(0xFF001A40), Color(0xFF002C66), Color(0xFF041427)], begin: Alignment.topLeft, end: Alignment.bottomRight),
       ),
       child: Center(
-        // Animated Container for the background glow
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeOut,
@@ -132,9 +132,8 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
     );
   }
 
-  // Glass title
+  /// Builds glass-style title with blur and gradient effects
   Widget _glassTitle(String text, double animValue) {
-    // This title blur/scale can now be affected by the 3D tilt in _IntroPageContent
     final double scale = 0.95 + (animValue * 0.08);
     return Center(
       child: Transform.scale(
@@ -181,14 +180,14 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
     );
   }
 
-  // builds animated page content using page position
+  /// Builds individual page content with animations
   Widget _buildPage(_IntroPageData data, BuildContext context, int index) {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         double page = 0;
         if (_controller.hasClients) {
-          page = (_controller.page ?? _controller.initialPage.toDouble());
+          page = _controller.page ?? _controller.initialPage.toDouble();
         } else {
           page = _page.toDouble();
         }
@@ -204,7 +203,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
         return SafeArea(
           child: Column(
             children: [
-              // Lottie Animation Area (Responsive: 32% of total height)
+              // Lottie Animation Area
               Expanded(
                 flex: 32,
                 child: FractionallySizedBox(
@@ -214,7 +213,6 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                   child: AnimatedBuilder(
                     animation: _lottieFloatAnimation,
                     builder: (context, child) {
-                      // Combined scroll parallax and perpetual float animation
                       final double floatOffset = _lottieFloatAnimation.value * 10.0;
                       return Transform.translate(
                         offset: Offset(0, lottieTranslateYScroll + floatOffset),
@@ -233,7 +231,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
 
               const SizedBox(height: 8),
 
-              // Glass-like title box (Subtle depth of field effect)
+              // Glass Title
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 28.0),
                 child: Opacity(opacity: 0.9 + (0.1 * titleAnim), child: _glassTitle(data.title, titleAnim)),
@@ -241,12 +239,12 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
 
               const Spacer(flex: 2),
 
-              // Center: ADVANCED 3D TILT DESCRIPTION CARD
+              // 3D Tilt Description Card
               _IntroPageContent(data: data, contentOpacity: contentOpacity, contentTranslateY: contentTranslateY),
 
               const Spacer(flex: 3),
 
-              // Page Indicator wrapped in a subtle glass container
+              // Page Indicator
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: ClipRRect(
@@ -270,7 +268,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                 ),
               ),
 
-              // Buttons area
+              // Buttons Area
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
                 child: Column(
@@ -318,9 +316,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
   }
 }
 
-//---
-
-/// NEW: Card that implements 3D tilt based on gesture drag.
+/// 3D tilt card component for intro page content
 class _IntroPageContent extends StatefulWidget {
   final _IntroPageData data;
   final double contentOpacity;
@@ -333,11 +329,8 @@ class _IntroPageContent extends StatefulWidget {
 }
 
 class _IntroPageContentState extends State<_IntroPageContent> with SingleTickerProviderStateMixin {
-  // Tilt values (normalized from -1.0 to 1.0)
   double _tiltX = 0;
   double _tiltY = 0;
-
-  // Animation controller for smooth return to center
   late AnimationController _tiltController;
   late Animation<double> _tiltAnimation;
 
@@ -354,12 +347,12 @@ class _IntroPageContentState extends State<_IntroPageContent> with SingleTickerP
     super.dispose();
   }
 
-  // Resets the tilt animation
+  /// Resets tilt animation to center position
   void _resetTilt() {
     if (_tiltController.isAnimating) return;
 
-    double startX = _tiltX;
-    double startY = _tiltY;
+    final double startX = _tiltX;
+    final double startY = _tiltY;
 
     _tiltController.reset();
     _tiltAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_tiltController)
@@ -379,20 +372,18 @@ class _IntroPageContentState extends State<_IntroPageContent> with SingleTickerP
     _tiltController.forward();
   }
 
-  // Handles drag updates to set tilt values
+  /// Handles drag updates for tilt effect
   void _onPanUpdate(DragUpdateDetails details, Size size) {
     _tiltController.stop();
 
-    // Calculate normalized position relative to the center of the card
-    double centerX = size.width / 2;
-    double centerY = size.height / 2;
+    final double centerX = size.width / 2;
+    final double centerY = size.height / 2;
 
-    double newX = (details.localPosition.dx - centerX) / centerX;
-    double newY = (details.localPosition.dy - centerY) / centerY;
+    final double newX = (details.localPosition.dx - centerX) / centerX;
+    final double newY = (details.localPosition.dy - centerY) / centerY;
 
-    // Invert for natural rotation (tilt away from the pointer)
-    _tiltX = (newY * -1).clamp(-0.15, 0.15); // Sensitivity Y-axis for X rotation
-    _tiltY = (newX * 1).clamp(-0.15, 0.15); // Sensitivity X-axis for Y rotation
+    _tiltX = (newY * -1).clamp(-0.15, 0.15);
+    _tiltY = (newX * 1).clamp(-0.15, 0.15);
 
     setState(() {});
   }
@@ -401,10 +392,9 @@ class _IntroPageContentState extends State<_IntroPageContent> with SingleTickerP
   Widget build(BuildContext context) {
     const Color shadowColor = Color(0xFF000F22);
     const double borderRadius = 16.0;
-
-    // Max rotation in degrees
     const double maxTilt = 10.0;
-    final double rotX = _tiltX * maxTilt * (1.0 - widget.contentOpacity); // Dampen tilt when fading out
+
+    final double rotX = _tiltX * maxTilt * (1.0 - widget.contentOpacity);
     final double rotY = _tiltY * maxTilt * (1.0 - widget.contentOpacity);
 
     return GestureDetector(
@@ -413,9 +403,8 @@ class _IntroPageContentState extends State<_IntroPageContent> with SingleTickerP
       onTapDown: (_) => _resetTilt(),
       onTapUp: (_) => _resetTilt(),
       child: Transform(
-        // The 3D Matrix Transform
         transform: Matrix4.identity()
-          ..setEntry(3, 2, 0.001) // Perspective
+          ..setEntry(3, 2, 0.001)
           ..rotateX(rotX * (3.14159 / 180))
           ..rotateY(rotY * (3.14159 / 180)),
         alignment: FractionalOffset.center,
@@ -483,9 +472,7 @@ class _IntroPageContentState extends State<_IntroPageContent> with SingleTickerP
   }
 }
 
-//---
-
-/// Primary Pill Button (Unchanged, remains clean and animated)
+/// Primary pill-shaped button with slide animation
 class _PrimaryPillButton extends StatefulWidget {
   final VoidCallback onTap;
   final String label;
@@ -530,7 +517,7 @@ class _PrimaryPillButtonState extends State<_PrimaryPillButton> with SingleTicke
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(color: shadowColor.withOpacity(0.3), offset: const Offset(0, 4), blurRadius: 15),
-          BoxShadow(color: shadowColor.withOpacity(0.08), offset: Offset(0, 0), blurRadius: 10),
+          BoxShadow(color: shadowColor.withOpacity(0.08), offset: Offset.zero, blurRadius: 10),
         ],
       ),
       child: ClipRRect(
@@ -568,9 +555,7 @@ class _PrimaryPillButtonState extends State<_PrimaryPillButton> with SingleTicke
   }
 }
 
-//---
-
-/// Secondary Outline Glass Button (Unchanged, retains interactive scale/blur)
+/// Secondary outline glass button with scale and blur effects
 class _SecondaryOutlineGlassButton extends StatefulWidget {
   final VoidCallback onTap;
   final String label;
@@ -645,6 +630,7 @@ class _SecondaryOutlineGlassButtonState extends State<_SecondaryOutlineGlassButt
   }
 }
 
+/// Data class for intro page content
 class _IntroPageData {
   final String title;
   final String lottie;

@@ -3,27 +3,27 @@ import 'package:get/get.dart';
 import '../model/marriage_game.dart';
 import '../model/user_model.dart';
 
+/// Represents the calculated result for a player in Marriage game
 class CalculatedResult {
   final MarriagePlayer player;
   final double netPoints;
   final bool isWinner;
-  final double totalPointForDisplay; // For display: total point for this player
+  final double totalPointForDisplay;
+
   const CalculatedResult({required this.player, required this.netPoints, this.isWinner = false, required this.totalPointForDisplay});
 }
 
+/// Controller for managing Marriage game players and calculations
 class PlayerController extends GetxController {
   final RxList<MarriagePlayer> players = <MarriagePlayer>[].obs;
   static const int defaultPlayerCount = 4;
 
   final RxInt selectedPlayerCount = defaultPlayerCount.obs;
   final RxDouble pointsPerRupee = 1.0.obs;
-
   final calculatedResults = <CalculatedResult>[].obs;
-
-  // Track if at least one winner is selected
   final RxBool _hasWinnerSelected = false.obs;
 
-  // Getter for UI
+  /// Determines if calculation can proceed (requires at least one winner)
   bool get canCalculate => _hasWinnerSelected.value;
 
   @override
@@ -32,12 +32,14 @@ class PlayerController extends GetxController {
     ever(players, (_) => _updateWinnerSelectionStatus());
   }
 
+  /// Initializes players with provided list
   void initializePlayers(List<MarriagePlayer> initialPlayers) {
     players.assignAll(initialPlayers);
     calculatedResults.clear();
     _updateWinnerSelectionStatus();
   }
 
+  /// Updates players list from User objects
   void updatePlayersFromUsers(List<User> newUsers) {
     final Map<String, MarriagePlayer> existingPlayersMap = {for (var player in players) player.userName: player};
 
@@ -53,25 +55,21 @@ class PlayerController extends GetxController {
     _updateWinnerSelectionStatus();
   }
 
-  // --- Game Setup Management Methods ---
+  /// Updates the number of players in the game
   void updatePlayerCount(int newCount) {
-    print('🎯 updatePlayerCount called with: $newCount');
-    print('🎯 Current selectedPlayerCount: ${selectedPlayerCount.value}');
-
     if (newCount >= 3 && newCount <= 6) {
       selectedPlayerCount.value = newCount;
-      print('✅ Player count updated to: $newCount');
-    } else {
-      print('❌ Invalid player count: $newCount (must be 3-6)');
     }
   }
 
+  /// Updates points per rupee conversion rate
   void updatePointsPerRupee(double value) {
     if (value > 0) {
       pointsPerRupee.value = value;
     }
   }
 
+  /// Resets the game to initial state
   void resetGame() {
     final List<MarriagePlayer> resetPlayers = players.map((player) {
       return player.copyWith(currentScore: 0, pointsEarned: 0.0, isDoublee: false, mode: PlayerMode.seen);
@@ -82,6 +80,7 @@ class PlayerController extends GetxController {
     _updateWinnerSelectionStatus();
   }
 
+  /// Updates player score and recalculates if needed
   void updatePlayerScore(String userName, double newPoints) {
     final index = players.indexWhere((p) => p.userName == userName);
     if (index != -1) {
@@ -92,6 +91,7 @@ class PlayerController extends GetxController {
     }
   }
 
+  /// Updates player mode and handles mode-specific logic
   void updatePlayerMode(String userName, PlayerMode newMode) {
     final index = players.indexWhere((p) => p.userName == userName);
     if (index != -1) {
@@ -103,6 +103,7 @@ class PlayerController extends GetxController {
     }
   }
 
+  /// Toggles doublee status for a player
   void toggleDoublee(String userName) {
     final index = players.indexWhere((p) => p.userName == userName);
     if (index != -1) {
@@ -112,7 +113,7 @@ class PlayerController extends GetxController {
     }
   }
 
-  // --- Winner Selection Status Check ---
+  /// Updates winner selection status based on current players
   void _updateWinnerSelectionStatus() {
     if (players.isEmpty) {
       _hasWinnerSelected.value = false;
@@ -122,7 +123,7 @@ class PlayerController extends GetxController {
     _hasWinnerSelected.value = hasWinner;
   }
 
-  // --- UPDATED CORE CALCULATION (Following Exact Rules) ---
+  /// Core calculation logic for Marriage game results
   void _calculateGameResults() {
     if (players.isEmpty) {
       calculatedResults.clear();
@@ -130,8 +131,6 @@ class PlayerController extends GetxController {
     }
 
     final int totalPlayers = players.length;
-
-    // Get explicit winners (players in Win mode)
     final List<MarriagePlayer> winners = players.where((player) => player.mode == PlayerMode.win).toList();
 
     if (winners.isEmpty) {
@@ -139,17 +138,16 @@ class PlayerController extends GetxController {
       return;
     }
 
-    // Step 1: Calculate base total (sum of all player points)
+    // Calculate base total from all player points
     final double baseTotal = players.fold(0.0, (sum, p) => sum + p.pointsEarned);
 
-    // Step 2: Calculate preliminary nets for non-winners (Blind and Seen players)
     final List<_PlayerCalculation> nonWinnerCalculations = [];
     final List<_PlayerCalculation> winnerCalculations = [];
 
-    // First, calculate for non-winners (Blind and Seen)
+    // Calculate non-winner results (Blind and Seen players)
     for (var player in players) {
       if (player.mode == PlayerMode.blind) {
-        // Blind player: loses baseTotal + 10
+        // Blind player loses baseTotal + 10
         final double totalPoint = baseTotal + 10.0;
         final double netPoints = -totalPoint;
 
@@ -170,21 +168,14 @@ class PlayerController extends GetxController {
 
         nonWinnerCalculations.add(_PlayerCalculation(player: player, totalPoint: totalPoint, netPoints: netPoints, displayPoints: player.pointsEarned));
       } else if (player.mode == PlayerMode.win) {
-        // For win players, we'll calculate display points but net will be determined later
+        // Win player calculation (net determined later)
         final double displayPoints = player.pointsEarned + (player.isDoublee ? 5.0 : 3.0);
 
-        winnerCalculations.add(
-          _PlayerCalculation(
-            player: player,
-            totalPoint: 0.0, // Will be calculated based on other players' nets
-            netPoints: 0.0, // Will be calculated based on other players' nets
-            displayPoints: displayPoints,
-          ),
-        );
+        winnerCalculations.add(_PlayerCalculation(player: player, totalPoint: 0.0, netPoints: 0.0, displayPoints: displayPoints));
       }
     }
 
-    // Step 3: Calculate win players' nets by summing other players' losses/wins
+    // Calculate win players' nets based on other players' results
     final List<CalculatedResult> finalResults = [];
 
     if (winners.isNotEmpty) {
@@ -194,10 +185,8 @@ class PlayerController extends GetxController {
         sumNonWinnerNets += calc.netPoints;
       }
 
-      // Each winner gets equal share of the negative sum (so winners get positive amount)
+      // Each winner gets equal share of the negative sum
       final double perWinnerShare = -sumNonWinnerNets / winners.length;
-
-      // Set win players' total point as the sum they need to achieve
       final double winTotalPoint = baseTotal + (winners.first.isDoublee ? 5.0 : 3.0);
 
       // Build final results for win players
@@ -216,27 +205,26 @@ class PlayerController extends GetxController {
     calculatedResults.value = finalResults;
   }
 
+  /// Triggers game calculation if conditions are met
   void calculateGame() {
     if (!canCalculate) return;
     _calculateGameResults();
   }
 
-  // --- Helpers for UI / Display ---
-
+  /// Generates formatted result summary for display
   String getResultSummary() {
     if (calculatedResults.isEmpty) return 'No results calculated';
 
     final buffer = StringBuffer();
-    buffer.writeln('🎮 Game Results Summary');
+    buffer.writeln('Game Results Summary');
     buffer.writeln('${'=' * 30}');
 
     for (final result in calculatedResults) {
       final p = result.player;
       final net = result.netPoints;
       final sign = net >= 0 ? '+' : '';
-      final status = result.isWinner ? '🏆 Winner' : (net < 0 ? '🔴 Loss' : '🟢 Profit');
+      final status = result.isWinner ? 'Winner' : (net < 0 ? 'Loss' : 'Profit');
 
-      // For win players, show points with bonus; for others show original points
       final double displayPlayerPoints = result.isWinner ? (p.pointsEarned + (p.isDoublee ? 5.0 : 3.0)) : p.pointsEarned;
 
       buffer.writeln('${p.userName}: $sign${net.toStringAsFixed(1)} pts → $status');
@@ -249,6 +237,7 @@ class PlayerController extends GetxController {
     return buffer.toString();
   }
 
+  /// Gets winner information for display
   String get winnerInfo {
     if (calculatedResults.isEmpty) return 'No result yet';
     final winners = calculatedResults.where((r) => r.isWinner).toList();
@@ -261,14 +250,16 @@ class PlayerController extends GetxController {
     return 'Winners: ${winners.map((w) => w.player.userName).join(', ')}';
   }
 
+  /// Gets pot information for display
   String get potInfo {
     if (players.isEmpty) return 'No players';
     final totalBasePoints = players.fold(0.0, (sum, player) => sum + player.pointsEarned);
 
     final winners = players.where((player) => player.mode == PlayerMode.win).toList();
-    if (winners.isEmpty) return 'Base Total: ${totalBasePoints.toStringAsFixed(1)} | No winner selected';
+    if (winners.isEmpty) {
+      return 'Base Total: ${totalBasePoints.toStringAsFixed(1)} | No winner selected';
+    }
 
-    // Calculate display total (base + bonus)
     double displayTotal = totalBasePoints;
     for (var winner in winners) {
       displayTotal += winner.isDoublee ? 5.0 : 3.0;
@@ -277,19 +268,23 @@ class PlayerController extends GetxController {
     return 'Base Total: ${totalBasePoints.toStringAsFixed(1)} | Display Total: ${displayTotal.toStringAsFixed(1)}';
   }
 
+  /// Converts points to monetary value
   double getMonetaryValue(double points) {
     return points / (pointsPerRupee.value == 0 ? 1 : pointsPerRupee.value);
   }
 
+  /// Formats monetary result for display
   String getFormattedMonetaryResult(double points) {
     final monetaryValue = getMonetaryValue(points.abs());
     return '₹${monetaryValue.toStringAsFixed(2)}';
   }
 
+  /// Checks if game is ready for calculation
   bool get isGameReadyToCalculate {
     return players.isNotEmpty && players.every((player) => player.pointsEarned >= 0);
   }
 
+  /// Gets display name for player mode
   String _getModeDisplayName(PlayerMode mode) {
     switch (mode) {
       case PlayerMode.blind:
@@ -301,12 +296,13 @@ class PlayerController extends GetxController {
     }
   }
 
+  /// Gets list of selected winners
   List<MarriagePlayer> get selectedWinners {
     return players.where((player) => player.mode == PlayerMode.win).toList();
   }
 }
 
-/// Internal temp holder for calculation
+/// Internal class for temporary calculation storage
 class _PlayerCalculation {
   final MarriagePlayer player;
   final double totalPoint;

@@ -7,6 +7,8 @@ import 'package:numberpicker/numberpicker.dart';
 
 import '../../controllers/call_break_controller.dart';
 
+/// Dialog for selecting overtricks (OT) in Callbreak game
+/// Allows players to choose extra tricks taken beyond their bid
 class OTPickerDialog extends StatefulWidget {
   final int playerIndex;
   final String tag;
@@ -139,7 +141,7 @@ class _OTPickerDialogState extends State<OTPickerDialog> {
             ),
             const SizedBox(height: 14),
 
-            // Buttons in 2 Rows (Swapped & Gradient Updated)
+            // Action Buttons
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
@@ -152,12 +154,12 @@ class _OTPickerDialogState extends State<OTPickerDialog> {
                 children: [
                   Row(
                     children: [
-                      // Failed (Pink Gradient)
+                      // Failed (Golo) - Pink Gradient
                       Expanded(
                         child: Container(
-                          height: 40,
+                          height: 36, // Reduced height
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             gradient: LinearGradient(colors: [Colors.pink.shade700, Colors.pink.shade400], begin: Alignment.topLeft, end: Alignment.bottomRight),
                           ),
                           child: ElevatedButton.icon(
@@ -166,15 +168,15 @@ class _OTPickerDialogState extends State<OTPickerDialog> {
                               controller.setExtra(widget.playerIndex, negativeExtra);
                               Navigator.of(context).pop();
                             },
-                            icon: const Icon(Icons.error_outline, size: 18, color: Colors.white),
+                            icon: const Icon(Icons.error_outline, size: 16, color: Colors.white), // Reduced icon size
                             label: Text(
                               'Golo',
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.white),
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white), // Reduced font size
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               padding: EdgeInsets.zero,
                             ),
                           ),
@@ -182,12 +184,12 @@ class _OTPickerDialogState extends State<OTPickerDialog> {
                       ),
                       const SizedBox(width: 6),
 
-                      // Tight (Purple Gradient)
+                      // Tight - Purple Gradient
                       Expanded(
                         child: Container(
-                          height: 40,
+                          height: 36, // Reduced height
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             gradient: LinearGradient(colors: [Colors.deepPurple.shade700, Colors.purple.shade400], begin: Alignment.topLeft, end: Alignment.bottomRight),
                           ),
                           child: ElevatedButton.icon(
@@ -195,15 +197,15 @@ class _OTPickerDialogState extends State<OTPickerDialog> {
                               controller.setExtra(widget.playerIndex, 0);
                               Navigator.of(context).pop();
                             },
-                            icon: const Icon(Icons.shield_rounded, size: 18, color: Colors.white),
+                            icon: const Icon(Icons.shield_rounded, size: 16, color: Colors.white), // Reduced icon size
                             label: Text(
                               'Tight',
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.white),
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white), // Reduced font size
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               padding: EdgeInsets.zero,
                             ),
                           ),
@@ -214,25 +216,25 @@ class _OTPickerDialogState extends State<OTPickerDialog> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      // Cancel
+                      // Cancel - Grey Gradient
                       Expanded(
                         child: Container(
-                          height: 40,
+                          height: 36, // Reduced height
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             gradient: LinearGradient(colors: [Colors.grey.shade600, Colors.grey.shade400], begin: Alignment.topLeft, end: Alignment.bottomRight),
                           ),
                           child: ElevatedButton.icon(
                             onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.cancel, size: 18, color: Colors.white),
+                            icon: const Icon(Icons.cancel, size: 16, color: Colors.white), // Reduced icon size
                             label: Text(
                               'Cancel',
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.white),
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white), // Reduced font size
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               padding: EdgeInsets.zero,
                             ),
                           ),
@@ -240,12 +242,12 @@ class _OTPickerDialogState extends State<OTPickerDialog> {
                       ),
                       const SizedBox(width: 6),
 
-                      // Confirm
+                      // Confirm - Primary Dark Gradient
                       Expanded(
                         child: Container(
-                          height: 40,
+                          height: 36, // Reduced height
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             gradient: LinearGradient(colors: [primaryDark, primaryDark.withOpacity(0.7)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                           ),
                           child: ElevatedButton.icon(
@@ -253,15 +255,15 @@ class _OTPickerDialogState extends State<OTPickerDialog> {
                               controller.setExtra(widget.playerIndex, currentExtra);
                               Navigator.of(context).pop();
                             },
-                            icon: const Icon(Icons.verified, size: 18, color: Colors.white),
+                            icon: const Icon(Icons.verified, size: 16, color: Colors.white), // Reduced icon size
                             label: Text(
                               'Confirm',
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.white),
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white), // Reduced font size
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               padding: EdgeInsets.zero,
                             ),
                           ),

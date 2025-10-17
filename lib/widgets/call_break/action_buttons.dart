@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../controllers/call_break_controller.dart';
 
+/// Action buttons widget for Callbreak game
+/// Provides NEW GAME and dynamic round control buttons with responsive design
 class ActionButtons extends StatelessWidget {
   final String tag;
 
@@ -14,6 +16,7 @@ class ActionButtons extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
+    // Responsive sizing based on screen dimensions
     final buttonHeight = screenHeight < 700 ? 40.0 : 42.0;
     final buttonFontSize = screenWidth < 350 ? 11.0 : 13.0;
     final iconSize = screenWidth < 350 ? 16.0 : 18.0;
@@ -31,6 +34,7 @@ class ActionButtons extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Main button container with gradient background
             Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(horizontal: screenWidth < 350 ? 8.0 : 12.0, vertical: screenHeight < 700 ? 8.0 : 10.0),
@@ -57,6 +61,7 @@ class ActionButtons extends StatelessWidget {
     });
   }
 
+  /// Builds the NEW GAME button with pink gradient
   Widget _buildNewGameButton(CallBreakController controller, double height, double fontSize, double iconSize) {
     return Container(
       height: height,
@@ -69,9 +74,6 @@ class ActionButtons extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          // --------------------------------------------------------------------
-          // CHANGED: Call the new method to show the New Player/Old Player dialog
-          // --------------------------------------------------------------------
           onTap: controller.showNewGameOptions,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -89,6 +91,7 @@ class ActionButtons extends StatelessWidget {
     );
   }
 
+  /// Builds the dynamic round control button that changes based on game state
   Widget _buildRoundButton(CallBreakController controller, double height, double fontSize, double iconSize) {
     final bool canStartRound = controller.selectedPlayers.isNotEmpty && controller.currentRound.value <= 5 && !controller.bidPhase.value && !controller.otPhase.value;
     final bool allBidsCompleted = controller.bidCompleted.every((completed) => completed);
@@ -100,6 +103,7 @@ class ActionButtons extends StatelessWidget {
     Color backgroundColor = const Color(0xFF0D47A1);
     IconData icon = Icons.play_arrow;
 
+    // Determine button state and appearance based on game phase
     if (isGameCompleted) {
       buttonText = 'COMPLETED';
       onPressed = null;

@@ -8,6 +8,7 @@ import 'package:hive/hive.dart';
 import '../model/game_history_models.dart';
 import '../model/marriage_game_history.dart';
 
+/// Controller for managing user statistics and leaderboard data
 class UserListController extends GetxController {
   var isLoading = false.obs;
   var userStats = <String, UserStats>{}.obs;
@@ -18,6 +19,7 @@ class UserListController extends GetxController {
     _loadAllUsersStats();
   }
 
+  /// Loads statistics for all users from the database
   Future<void> _loadAllUsersStats() async {
     isLoading.value = true;
     try {
@@ -29,12 +31,13 @@ class UserListController extends GetxController {
         await _loadUserStats(user.username);
       }
     } catch (e) {
-      print('Error loading user stats: $e');
+      // Error handled silently in production
     } finally {
       isLoading.value = false;
     }
   }
 
+  /// Loads statistics for a specific user
   Future<void> _loadUserStats(String username) async {
     try {
       // Get marriage stats
@@ -50,11 +53,12 @@ class UserListController extends GetxController {
 
       userStats[username] = UserStats(totalWins: totalWins, level: level, marriageWins: marriageWins, callbreakWins: callbreakWins);
     } catch (e) {
-      print('Error loading stats for $username: $e');
+      // Set default stats on error
       userStats[username] = UserStats(totalWins: 0, level: 1, marriageWins: 0, callbreakWins: 0);
     }
   }
 
+  /// Calculates number of Marriage game wins for a user
   int _calculateMarriageWins(List<dynamic> marriageGames, String username) {
     int wins = 0;
     for (final game in marriageGames) {
@@ -71,6 +75,7 @@ class UserListController extends GetxController {
     return wins;
   }
 
+  /// Calculates number of Call Break game wins for a user
   int _calculateCallbreakWins(List<dynamic> callbreakGames, String username) {
     int wins = 0;
     for (final game in callbreakGames) {
@@ -87,28 +92,32 @@ class UserListController extends GetxController {
     return wins;
   }
 
+  /// Calculates user level based on total wins
+  /// Level progression: 0-9 wins = Level 1, 10-19 = Level 2, 20-29 = Level 3, etc.
   int _calculateLevel(int totalWins) {
-    // Level progression: 0-9 wins = Level 1, 10-19 = Level 2, 20-29 = Level 3, etc.
     return (totalWins ~/ 10) + 1;
   }
 
+  /// Gets total number of matches played across all users
   int getTotalMatches() {
     final marriageGames = HistoryRepository.getAllMarriageGames().length;
     final callbreakGames = HistoryRepository.getAllCallBreakGames().length;
     return marriageGames + callbreakGames;
   }
 
+  /// Gets the highest level achieved among all users
   int getHighestLevel() {
     if (userStats.isEmpty) return 0;
     return userStats.values.map((stats) => stats.level).reduce((a, b) => a > b ? a : b);
   }
 
-  // Refresh stats when new user is added
+  /// Refreshes all user statistics
   Future<void> refreshStats() async {
     await _loadAllUsersStats();
   }
 }
 
+/// Represents user statistics for display in leaderboard
 class UserStats {
   final int totalWins;
   final int level;

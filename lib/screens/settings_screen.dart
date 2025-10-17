@@ -12,6 +12,8 @@ class ModernColors {
   static const Color textMuted = Color(0xFFA0A0CC);
 }
 
+/// Settings screen for application configuration and preferences
+/// Provides controls for theme, notifications, audio, and account management
 class SettingsScreen extends StatefulWidget {
   final String tag;
   final Color color;
@@ -44,7 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: "Theme Mode",
               trailing: const Icon(Icons.brightness_2, color: ModernColors.textMuted),
               onTap: () {
-                /* Toggle theme logic */
+                // Toggle theme logic would be implemented here
               },
             ),
             _buildSectionTitle("Audio & Notifications"),
@@ -91,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: "Log Out",
               trailing: const Icon(Icons.logout, color: Colors.redAccent),
               onTap: () {
-                /* Logout logic */
+                // Logout logic would be implemented here
               },
             ),
           ],
@@ -100,6 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Builds section title with consistent styling
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(top: 20.0, bottom: 10.0),
@@ -110,6 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Builds individual settings tile with consistent styling
   Widget _buildSettingsTile({required String title, Widget? trailing, VoidCallback? onTap}) {
     return Card(
       color: ModernColors.darkSurface.withOpacity(0.7),

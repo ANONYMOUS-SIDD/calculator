@@ -1,0 +1,44 @@
+type User @table {
+  displayName: String!
+  createdAt: Timestamp!
+  email: String
+  photoUrl: String
+}
+
+type CreditCard @table {
+  user: User!
+  name: String!
+  lastFourDigits: String!
+  issuer: String!
+  createdAt: Timestamp!
+  annualFee: Float
+  rewardProgramDescription: String
+  pointsBalance: Int
+}
+
+type Transaction @table {
+  creditCard: CreditCard!
+  user: User!
+  description: String!
+  amount: Float!
+  transactionDate: Date!
+  createdAt: Timestamp!
+  category: Category
+  merchant: String
+  isBusinessExpense: Boolean
+}
+
+type Category @table {
+  name: String!
+  description: String
+}
+
+type Budget @table {
+  user: User!
+  category: Category!
+  amount: Float!
+  period: String!
+  startDate: Date!
+  createdAt: Timestamp!
+  endDate: Date
+}

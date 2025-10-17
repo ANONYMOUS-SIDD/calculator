@@ -10,6 +10,7 @@ import '../widgets/call_break/round_history.dart';
 import '../widgets/moder_app_bar.dart';
 import '../widgets/player_selection_dialog.dart';
 
+/// Screen for playing Call Break card game
 class CallBreakScreen extends StatefulWidget {
   final String tag;
   final Color color;
@@ -30,6 +31,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
     controller = Get.put(CallBreakController(widget.tag), tag: widget.tag);
   }
 
+  /// Shows player selection dialog for choosing game participants
   void _showPlayerSelectionDialog() {
     Get.dialog(PlayerSelectionDialog(numberOfPlayers: 4, alreadySelectedPlayers: controller.selectedPlayers.map((user) => user.username).toList()), barrierDismissible: false).then((selectedPlayers) {
       if (selectedPlayers != null && selectedPlayers is List) {
@@ -38,6 +40,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
     });
   }
 
+  /// Builds floating action button for adding players
   Widget _buildFloatingActionButton() {
     return Obx(() {
       if (controller.selectedPlayers.isEmpty) {
@@ -52,9 +55,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
               borderRadius: BorderRadius.circular(18),
               gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               boxShadow: [
-                // iOS-like glow effect
                 BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.5), blurRadius: 20, spreadRadius: 3, offset: const Offset(0, 8)),
-                // Subtle shadow for depth
                 BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4)),
               ],
               border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
@@ -88,19 +89,12 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: Column(
                   children: [
-                    // Small padding between app bar and round progress
                     const SizedBox(height: 8),
 
-                    // Round Progress Section - Always at top
-                    if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersHeader(), const SizedBox(height: 5)],
+                    // Display game sections only when players are selected
+                    if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersHeader(), const SizedBox(height: 5), RoundHistory(tag: widget.tag), const SizedBox(height: 5), _buildPlayersContainer(), const SizedBox(height: 5)],
 
-                    // Score Round History (table)
-                    if (controller.selectedPlayers.isNotEmpty) ...[RoundHistory(tag: widget.tag), const SizedBox(height: 5)],
-
-                    // Player Cards for bid selection
-                    if (controller.selectedPlayers.isNotEmpty) ...[_buildPlayersContainer(), const SizedBox(height: 5)],
-
-                    // Empty State
+                    // Show empty state when no players are selected
                     if (controller.selectedPlayers.isEmpty) ...[_buildEmptyState()],
                   ],
                 ),
@@ -108,19 +102,20 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
             }),
           ),
 
-          // Bottom Action Buttons
+          // Bottom action buttons (only show when players are selected)
           Obx(() => controller.selectedPlayers.isNotEmpty ? ActionButtons(tag: widget.tag) : const SizedBox()),
         ],
       ),
     );
   }
 
+  /// Builds players header section with round progress indicator
   Widget _buildPlayersHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
         children: [
-          // Game Icon - Compact
+          // Game icon container
           Container(
             width: 36,
             height: 36,
@@ -132,7 +127,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
           ),
           const SizedBox(width: 8),
 
-          // Round Progress Indicator
+          // Round progress indicator
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +150,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
                         Container(
                           decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(3)),
                         ),
-                        // Progress
+                        // Progress bar
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           width: MediaQuery.of(Get.context!).size.width * 0.6 * progress,
@@ -174,7 +169,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
 
           const SizedBox(width: 8),
 
-          // Round Indicator - Compact
+          // Round indicator
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -198,6 +193,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
     );
   }
 
+  /// Builds container for player cards
   Widget _buildPlayersContainer() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -214,6 +210,7 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
     );
   }
 
+  /// Builds empty state when no players are selected
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -221,7 +218,6 @@ class _CallBreakScreenState extends State<CallBreakScreen> {
         children: [
           const SizedBox(height: 200),
           SizedBox(width: 200, height: 200, child: Lottie.asset('assets/lottie/intro3.json', fit: BoxFit.contain)),
-
           Text(
             "Tap + icon to add players",
             style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.grey[700]),

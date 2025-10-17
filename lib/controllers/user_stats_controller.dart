@@ -10,17 +10,20 @@ import '../repositories/history_repository.dart';
 // STATS MODELS
 // =========================================================================
 
+/// Statistics for Marriage game performance
 class MarriageStats {
   final int totalMatches;
   final int wins;
-  final double totalAmountEarned; // Now represents Net Profit/Loss (Rupees)
-  final double totalMarriagePoints; // Now represents Net Profit/Loss (Points)
+  final double totalAmountEarned;
+  final double totalMarriagePoints;
 
   MarriageStats({required this.totalMatches, required this.wins, required this.totalAmountEarned, required this.totalMarriagePoints});
 
+  /// Calculates win rate percentage
   double get winRate => totalMatches > 0 ? (wins / totalMatches) * 100 : 0.0;
 }
 
+/// Statistics for Call Break game performance
 class CallbreakStats {
   final int totalMatches;
   final int firstPlace;
@@ -31,9 +34,11 @@ class CallbreakStats {
   CallbreakStats({required this.totalMatches, required this.firstPlace, required this.secondPlace, required this.thirdPlace, required this.fourthPlace});
 }
 
+/// Container for both Marriage and Call Break statistics
 class StatsResult {
   final MarriageStats? marriageStats;
   final CallbreakStats? callbreakStats;
+
   StatsResult(this.marriageStats, this.callbreakStats);
 }
 
@@ -41,11 +46,11 @@ class StatsResult {
 // USER STATS CONTROLLER (MAIN THREAD)
 // =========================================================================
 
+/// Controller for managing user statistics across both game types
 class UserStatsController extends GetxController {
   final String userName;
 
   var selectedDateRange = Rx<Map<String, DateTime>?>(null);
-
   var marriageStats = Rx<MarriageStats?>(null);
   var callbreakStats = Rx<CallbreakStats?>(null);
   var isLoading = false.obs;
@@ -59,56 +64,54 @@ class UserStatsController extends GetxController {
     _loadTodaysStatistics();
   }
 
+  /// Sets date range for statistics filtering
   void setDateRange(DateTime start, DateTime end) {
     selectedDateRange.value = {'start': start, 'end': end};
     isToday.value = _isTodayRange(start, end);
     _loadStatisticsAsync();
   }
 
+  /// Clears date range and loads today's statistics
   void clearDateRange() {
     selectedDateRange.value = null;
     isToday.value = true;
     _loadTodaysStatistics();
   }
 
+  /// Reloads today's statistics
   void loadTodaysStatistics() {
     _loadTodaysStatistics();
   }
 
+  /// Loads statistics for today
   void _loadTodaysStatistics() {
     isLoading.value = true;
     _loadStatisticsAsync(isTodayLoad: true);
   }
 
+  /// Loads statistics asynchronously using compute for background processing
   void _loadStatisticsAsync({bool isTodayLoad = false}) async {
-    print('📊 [Controller] Starting statistics load. isTodayLoad: $isTodayLoad');
     isLoading.value = true;
+
     try {
       final appDocumentDir = await getApplicationDocumentsDirectory();
       final hivePath = appDocumentDir.path;
 
       final arguments = {'userName': userName, 'dateRange': selectedDateRange.value, 'isTodayLoad': isTodayLoad, 'hivePath': hivePath};
 
-      final startTime = DateTime.now();
-
       final result = await compute(_loadAndCalculateStats, arguments);
-
-      final duration = DateTime.now().difference(startTime);
-      print('✅ [Controller] Isolate calculation finished in ${duration.inMilliseconds}ms');
 
       marriageStats.value = result.marriageStats;
       callbreakStats.value = result.callbreakStats;
     } catch (e) {
-      // ignore: avoid_print
-      print('❌ Error loading statistics: $e');
       marriageStats.value = null;
       callbreakStats.value = null;
     } finally {
-      print('🎉 [Controller] Statistics assigned. Loading state removed.');
       isLoading.value = false;
     }
   }
 
+  /// Checks if the given date range represents today
   bool _isTodayRange(DateTime start, DateTime end) {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
@@ -118,30 +121,25 @@ class UserStatsController extends GetxController {
 }
 
 // =========================================================================
-// TOP-LEVEL (OR STATIC) FUNCTIONS FOR ISOLATE EXECUTION
+// TOP-LEVEL FUNCTIONS FOR ISOLATE EXECUTION
 // =========================================================================
 
+/// Top-level function for background statistics calculation
 Future<StatsResult> _loadAndCalculateStats(Map<String, dynamic> arguments) async {
   final userName = arguments['userName'] as String;
   final dateRange = arguments['dateRange'] as Map<String, DateTime>?;
   final isTodayLoad = arguments['isTodayLoad'] as bool;
   final hivePath = arguments['hivePath'] as String;
 
-  print('⚙️ [Isolate] Started background processing for user: $userName');
-  final isolateStartTime = DateTime.now();
-
   try {
     await HistoryRepository.initializeIsolate(hivePath);
   } catch (e) {
-    print('FATAL ISOLATE ERROR: Failed to initialize repository: $e');
     return StatsResult(null, null);
   }
 
-  // --- Data Retrieval ---
+  // Data retrieval
   List<MarriageGameHistory> marriageGames;
   List<CallBreakGameHistory> callbreakGames;
-
-  final retrievalStart = DateTime.now();
 
   if (isTodayLoad) {
     marriageGames = _getTodaysMarriageGamesIsolate(userName);
@@ -151,39 +149,28 @@ Future<StatsResult> _loadAndCalculateStats(Map<String, dynamic> arguments) async
     callbreakGames = _getFilteredCallbreakGamesIsolate(userName, dateRange);
   }
 
-  final retrievalDuration = DateTime.now().difference(retrievalStart);
-  print('⚠️ [Isolate] Data Retrieval + Initial Filtering time: ${retrievalDuration.inMilliseconds}ms');
-  print('   Marriage Games Fetched: ${marriageGames.length}');
-  // Assuming CallBreakGameHistory is available in context
-  // print('   Callbreak Games Fetched: ${callbreakGames.length}');
-
-  // --- Data Calculation ---
-  // --- Data Calculation ---
-  final calculationStart = DateTime.now();
+  // Data calculation
   final marriageStats = _calculateMarriageStatsIsolate(marriageGames, userName);
-  final callbreakStats = _calculateCallbreakStatsIsolate(callbreakGames, userName); // ✅ FIXED: Actually calculate callbreak stats// Temporary placeholder
-  final calculationDuration = DateTime.now().difference(calculationStart);
-  print('📈 [Isolate] Final Calculation time: ${calculationDuration.inMilliseconds}ms');
-
-  final totalDuration = DateTime.now().difference(isolateStartTime);
-  print('✅ [Isolate] Total background processing time: ${totalDuration.inMilliseconds}ms');
+  final callbreakStats = _calculateCallbreakStatsIsolate(callbreakGames, userName);
 
   return StatsResult(marriageStats, callbreakStats);
 }
 
-// --- Helper Functions for Isolate ---
+// =========================================================================
+// HELPER FUNCTIONS FOR ISOLATE
+// =========================================================================
 
+/// Gets today's Marriage games for a specific user
 List<MarriageGameHistory> _getTodaysMarriageGamesIsolate(String userName) {
   return HistoryRepository.getTodaysMarriageGames().where((game) {
     return game.players.any((player) => player.userName == userName);
   }).toList();
 }
 
-// Assuming CallbreakGameHistory and its methods are defined elsewhere
+/// Gets today's Call Break games for a specific user
 List<CallBreakGameHistory> _getTodaysCallbreakGamesIsolate(String userName) {
   return HistoryRepository.getTodaysGames()
       .where((game) {
-        // Assuming CallBreakGameHistory has a playerNames property
         if (game is CallBreakGameHistory) {
           return game.playerNames.contains(userName);
         }
@@ -193,6 +180,7 @@ List<CallBreakGameHistory> _getTodaysCallbreakGamesIsolate(String userName) {
       .toList();
 }
 
+/// Gets filtered Marriage games by date range for a specific user
 List<MarriageGameHistory> _getFilteredMarriageGamesIsolate(String userName, Map<String, DateTime>? dateRange) {
   final allGames = HistoryRepository.getAllMarriageGames();
   return _filterGamesByDateRangeIsolate<MarriageGameHistory>(allGames, dateRange).where((game) {
@@ -200,11 +188,11 @@ List<MarriageGameHistory> _getFilteredMarriageGamesIsolate(String userName, Map<
   }).toList();
 }
 
+/// Gets filtered Call Break games by date range for a specific user
 List<CallBreakGameHistory> _getFilteredCallbreakGamesIsolate(String userName, Map<String, DateTime>? dateRange) {
   final allGames = HistoryRepository.getAllCallBreakGames();
   return _filterGamesByDateRangeIsolate<CallBreakGameHistory>(allGames, dateRange)
       .where((game) {
-        // Assuming CallBreakGameHistory has a playerNames property
         if (game is CallBreakGameHistory) {
           return game.playerNames.contains(userName);
         }
@@ -214,6 +202,7 @@ List<CallBreakGameHistory> _getFilteredCallbreakGamesIsolate(String userName, Ma
       .toList();
 }
 
+/// Filters games by date range for both game types
 List<T> _filterGamesByDateRangeIsolate<T>(List<T> games, Map<String, DateTime>? selectedDateRange) {
   if (selectedDateRange == null) return games;
 
@@ -226,67 +215,44 @@ List<T> _filterGamesByDateRangeIsolate<T>(List<T> games, Map<String, DateTime>? 
     if (game is MarriageGameHistory) {
       gameDate = game.playedAt;
     } else if (game is CallBreakGameHistory) {
-      gameDate = game.timestamp; // Assuming CallBreakGameHistory has a timestamp property
+      gameDate = game.timestamp;
     } else {
       return false;
     }
 
-    // Filter games that start after the start date (inclusive) and end before the end date (inclusive)
     return gameDate.isAfter(startDate.subtract(const Duration(milliseconds: 1))) && gameDate.isBefore(endDate.add(const Duration(milliseconds: 1)));
   }).toList();
 }
 
-// 🎯 CORRECTED LOGIC FOR MARRIAGE STATS (Uses net calculated fields)
-// 🎯 CORRECTED LOGIC FOR MARRIAGE STATS (Uses net calculated fields)
+/// Calculates Marriage game statistics for a user
 MarriageStats _calculateMarriageStatsIsolate(List<MarriageGameHistory> games, String userName) {
   int totalMatches = 0;
   int wins = 0;
-  double totalAmountEarned = 0.0; // Accumulates net amount change (P/L in Rupees)
-  double totalMarriagePoints = 0.0; // Accumulates net points change (P/L in Points)
+  double totalAmountEarned = 0.0;
+  double totalMarriagePoints = 0.0;
 
   for (final game in games) {
-    // Find the player's history in the current game
     final player = game.players.firstWhere(
       (p) => p.userName == userName,
-      // Fallback - must provide all required fields, including the new ones
-      orElse: () => MarriagePlayerHistory(
-        userId: '',
-        userName: '',
-        maalPoints: 0,
-        isSequence: false,
-        isDoublee: false,
-        pointsEarned: 0,
-        currentScore: 0,
-        mode: '',
-        netPointsChange: 0.0, // Important: provide default
-        netAmountChange: 0.0, // Important: provide default
-      ),
+      orElse: () => MarriagePlayerHistory(userId: '', userName: '', maalPoints: 0, isSequence: false, isDoublee: false, pointsEarned: 0, currentScore: 0, mode: '', netPointsChange: 0.0, netAmountChange: 0.0),
     );
 
     if (player.userName == userName) {
-      // 1. Total Matches: Total marriage match played by the user.
       totalMatches++;
 
-      // 2. Count Win Properly: ONLY count if the player's mode was explicitly 'Win'.
       if (player.mode.toLowerCase() == 'win') {
         wins++;
       }
 
-      // 3. Update Total Amount: Sum the FINAL NET AMOUNT (gain or loss)
-      // This correctly uses the pre-calculated, final net amount.
       totalAmountEarned += player.netAmountChange;
-
-      // 4. Update Total Calculated Point: Sum the FINAL NET POINTS (gain or loss)
-      // This correctly uses the pre-calculated, final net points.
       totalMarriagePoints += player.netPointsChange;
     }
   }
 
-  // Final MarriageStats object displays the accumulated Net Profit/Loss
   return MarriageStats(totalMatches: totalMatches, wins: wins, totalAmountEarned: totalAmountEarned, totalMarriagePoints: totalMarriagePoints);
 }
 
-// 🛑 CONFIRMED LOGIC FOR CALLBREAK STATS
+/// Calculates Call Break game statistics for a user
 CallbreakStats _calculateCallbreakStatsIsolate(List<CallBreakGameHistory> games, String userName) {
   int totalMatches = 0;
   int firstPlace = 0;
@@ -295,22 +261,15 @@ CallbreakStats _calculateCallbreakStatsIsolate(List<CallBreakGameHistory> games,
   int fourthPlace = 0;
 
   for (final game in games) {
-    // Assuming CallBreakGameHistory has playerNames and totalScores
     final playerIndex = game.playerNames.indexWhere((name) => name == userName);
 
     if (playerIndex != -1 && playerIndex < game.totalScores.length) {
-      // 1. Total Matches: Count every Callbreak game the user participated in.
       totalMatches++;
 
       final playerScore = game.totalScores[playerIndex];
-
-      // Create a sorted list of scores in descending order
       final sortedScores = List<double>.from(game.totalScores)..sort((a, b) => b.compareTo(a));
-
-      // Find the user's rank (1-based index in the sorted list)
       final position = sortedScores.indexOf(playerScore) + 1;
 
-      // 2. Positions: Count the rank achieved (1st, 2nd, 3rd, 4th).
       switch (position) {
         case 1:
           firstPlace++;

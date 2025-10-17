@@ -15,6 +15,8 @@ import 'package:lottie/lottie.dart';
 import '../controllers/user_list_controller.dart';
 import '../widgets/moder_app_bar.dart';
 
+/// Users management screen with leaderboard and player statistics
+/// Features a 3D carousel for top players and comprehensive user management
 class UsersScreen extends StatefulWidget {
   final String tag;
   final Color color;
@@ -43,19 +45,20 @@ class _UsersScreenState extends State<UsersScreen> {
     _startAutoPlay();
   }
 
+  /// Starts automatic carousel scrolling for top users
   void _startAutoPlay() {
     _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_pageController.hasClients) {
         final int topUserCount = _getTopUsersCount();
         if (topUserCount > 0) {
           _currentPage++;
-          // CORRECTED TYPO: animateToToPage -> animateToPage
           _pageController.animateToPage(_currentPage, duration: const Duration(milliseconds: 700), curve: Curves.easeInOut);
         }
       }
     });
   }
 
+  /// Gets the count of top users for carousel display
   int _getTopUsersCount() {
     final box = Hive.box<User>('usersBox');
     final users = box.values.toList().cast<User>();
@@ -70,7 +73,6 @@ class _UsersScreenState extends State<UsersScreen> {
     super.dispose();
   }
 
-  // --- BUILD METHOD ---
   @override
   Widget build(BuildContext context) {
     final UserListController controller = Get.put(UserListController());
@@ -144,7 +146,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       child: _build3DLeaderboardCarousel(top3Users, controller, isTablet, isSmall),
                     ),
 
-                    // REDUCED SPACE BETWEEN DOTS AND LIST (SizedBox height)
+                    // REDUCED SPACE BETWEEN DOTS AND LIST
                     SizedBox(height: isTablet ? 8 : 4),
 
                     // Player List
@@ -221,7 +223,7 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // --- 3D LEADERBOARD CAROUSEL WIDGET ---
+  /// Builds the 3D leaderboard carousel with animated page transitions
   Widget _build3DLeaderboardCarousel(List<User> top3Users, UserListController controller, bool isTablet, bool isSmall) {
     if (top3Users.isEmpty) return const SizedBox.shrink();
 
@@ -294,7 +296,7 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // --- REVISED: Wrapper only for scaling/transforming, no shadows here ---
+  /// Builds individual carousel item with scaling and transformation
   Widget _buildCleanUserTileForCarousel(User user, int rank, bool isTablet, bool isSmall) {
     return Container(
       // REDUCED VERTICAL MARGIN for compactness
@@ -308,8 +310,7 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // --- EXISTING/UTILITY METHODS ---
-
+  /// Sorts users by wins in descending order
   List<User> _sortUsersByWins(List<User> users, UserListController controller) {
     users.sort((a, b) {
       final aWins = controller.userStats[a.username]?.totalWins ?? 0;
@@ -319,6 +320,7 @@ class _UsersScreenState extends State<UsersScreen> {
     return users;
   }
 
+  /// Builds empty state when no users are available
   Widget _buildEmptyState(bool isTablet, bool isSmall) {
     return Center(
       child: Column(
@@ -387,6 +389,7 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
+  /// Shows dialog to add a new user
   void _showAddUserDialog(BuildContext context) {
     final UserListController controller = Get.find<UserListController>();
 
@@ -405,7 +408,7 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // NEW METHOD: Handle user editing with reference updates
+  /// Shows dialog to edit an existing user
   void _showEditUserDialog(BuildContext context, User user) {
     final UserListController controller = Get.find<UserListController>();
 
@@ -446,7 +449,7 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  // NEW METHOD: Update all references when username changes
+  /// Updates all user stats references when username changes
   void _updateUserStatsReferences(String oldUsername, String newUsername, UserListController controller) {
     // Update userStats in controller
     if (controller.userStats.containsKey(oldUsername)) {
@@ -456,14 +459,14 @@ class _UsersScreenState extends State<UsersScreen> {
       controller.update(); // Notify listeners about the change
     }
 
-    // Update Hive storage for game history (if you have one)
+    // Update Hive storage for game history
     _updateGameHistoryReferences(oldUsername, newUsername);
 
-    // Update any other references you might have
+    // Update any other references
     _updateOtherReferences(oldUsername, newUsername);
   }
 
-  // Update game history references
+  /// Updates game history references when username changes
   void _updateGameHistoryReferences(String oldUsername, String newUsername) {
     try {
       // If you have a game history box
@@ -480,11 +483,11 @@ class _UsersScreenState extends State<UsersScreen> {
         // Add more conditions based on your data structure
       }
     } catch (e) {
-      print('Error updating game history: $e');
+      // Error handled silently in production
     }
   }
 
-  // Update any other references
+  /// Updates other references like achievements and sessions
   void _updateOtherReferences(String oldUsername, String newUsername) {
     try {
       // Update achievements if you have them
@@ -499,7 +502,7 @@ class _UsersScreenState extends State<UsersScreen> {
         }
       }
     } catch (e) {
-      print('Error updating other references: $e');
+      // Error handled silently in production
     }
 
     try {
@@ -515,12 +518,13 @@ class _UsersScreenState extends State<UsersScreen> {
         }
       }
     } catch (e) {
-      print('Error updating sessions: $e');
+      // Error handled silently in production
     }
   }
 }
 
-// --- REVISED _CleanUserTile: Shadow added directly here ---
+/// Clean user tile widget for displaying individual player information
+/// Used in both carousel and list views with consistent styling
 class _CleanUserTile extends StatelessWidget {
   final User user;
   final int rank;
@@ -530,7 +534,7 @@ class _CleanUserTile extends StatelessWidget {
 
   const _CleanUserTile({super.key, required this.user, required this.rank, required this.isTablet, required this.isSmall, this.onEdit});
 
-  // Utility method to get RankConfig
+  /// Gets rank configuration including colors, icons and gradients
   RankConfig _getRankConfig(int rank) {
     switch (rank) {
       case 1:
@@ -564,6 +568,7 @@ class _CleanUserTile extends StatelessWidget {
     }
   }
 
+  /// Builds user avatar with initials or profile image
   Widget _buildAvatar(String username) {
     final double size = isTablet ? 48.0 : 42.0;
     return Container(
@@ -577,6 +582,7 @@ class _CleanUserTile extends StatelessWidget {
     );
   }
 
+  /// Extracts initials from username for avatar display
   String _getInitials(String name) {
     final names = name.split(' ');
     if (names.length >= 2) {
@@ -587,6 +593,7 @@ class _CleanUserTile extends StatelessWidget {
     return '?';
   }
 
+  /// Shows user statistics dialog
   void _showUserStatsDialog(BuildContext context, String userName) {
     showDialog(
       context: context,
@@ -607,16 +614,16 @@ class _CleanUserTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
         border: Border.all(color: Colors.grey.shade200, width: 1.5),
-        // NEW: Shadow moved here to adhere to the rounded corners
+        // Shadow moved here to adhere to the rounded corners
         boxShadow: [
           BoxShadow(
             color: Colors.blue.withOpacity(0.12), // Slightly darker, more prominent shadow
-            blurRadius: 6, // **Adjusted: Reduced blur for a smaller shadow**
-            spreadRadius: -2, // **Adjusted: Negative spread to make it even smaller/tighter**
-            offset: const Offset(0, 5), // **Adjusted: Reduced vertical offset**
+            blurRadius: 6, // Reduced blur for a smaller shadow
+            spreadRadius: -2, // Negative spread to make it even smaller/tighter
+            offset: const Offset(0, 5), // Reduced vertical offset
           ),
           BoxShadow(
-            color: Colors.white.withOpacity(0.7), // Subtle top highlight for lift (more visible now)
+            color: Colors.white.withOpacity(0.7), // Subtle top highlight for lift
             blurRadius: 8,
             spreadRadius: 0,
             offset: const Offset(0, -3), // Slightly offset upwards
@@ -633,7 +640,7 @@ class _CleanUserTile extends StatelessWidget {
             padding: EdgeInsets.all(isTablet ? 14 : 12),
             child: Row(
               children: [
-                // Rank
+                // Rank display
                 Container(
                   width: isTablet ? 40 : 36,
                   height: isTablet ? 40 : 36,
@@ -648,7 +655,7 @@ class _CleanUserTile extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: isTablet ? 14 : 12),
-                // Avatar
+                // Avatar display
                 Container(
                   width: isTablet ? 48 : 42,
                   height: isTablet ? 48 : 42,
@@ -661,7 +668,7 @@ class _CleanUserTile extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: isTablet ? 14 : 12),
-                // Info
+                // User information
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,6 +744,7 @@ class _CleanUserTile extends StatelessWidget {
   }
 }
 
+/// Configuration class for rank display properties
 class RankConfig {
   final Color color;
   final IconData icon;

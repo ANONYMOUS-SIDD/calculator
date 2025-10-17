@@ -5,8 +5,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../controllers/player_controller.dart';
-import '../model/marriage_game.dart'; // ADD THIS IMPORT
+import '../model/marriage_game.dart';
 
+/// Widget that displays the final results table with player breakdown and game statistics
 class ResultsTable extends StatelessWidget {
   const ResultsTable({super.key});
 
@@ -18,6 +19,7 @@ class ResultsTable extends StatelessWidget {
       final List<CalculatedResult> netResults = controller.calculatedResults;
       final double pointsPerRupee = controller.pointsPerRupee.value;
 
+      // Hide widget if no results to display
       if (netResults.isEmpty) return const SizedBox.shrink();
 
       // Calculate total points of the whole match (sum of all players' display points)
@@ -49,8 +51,9 @@ class ResultsTable extends StatelessWidget {
     });
   }
 
-  // ---------------- GAME TALLY SECTION ----------------
+  // ==================== GAME TALLY SECTION ====================
 
+  /// Builds the game statistics section showing total points, rate, and player count
   Widget _buildGameTallySection(double totalMatchPoints, double pointsPerRupee, int playersCount) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -78,7 +81,8 @@ class ResultsTable extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 "Calculation",
-                style: GoogleFonts.raleway(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.blue.shade900),
+                // CHANGED: GoogleFonts.raleway to GoogleFonts.poppins
+                style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.blue.shade900),
               ),
             ],
           ),
@@ -107,6 +111,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
+  /// Builds individual statistic container with label and value
   Widget _buildStatContainer({required String label, required String value, required Color color, bool isRate = false}) {
     return Expanded(
       child: Container(
@@ -134,8 +139,9 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
-  // ---------------- PLAYER BREAKDOWN SECTION ----------------
+  // ==================== PLAYER BREAKDOWN SECTION ====================
 
+  /// Builds the detailed player breakdown section with points and amounts
   Widget _buildPlayerBreakdownSection(List<CalculatedResult> netResults, double pointsPerRupee) {
     return Container(
       decoration: BoxDecoration(
@@ -173,6 +179,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
+  /// Builds the header row for player breakdown section
   Widget _buildPlayerBreakdownHeader(int playerFlex, int pointsFlex, int amountFlex) {
     return Row(
       children: [
@@ -185,6 +192,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
+  /// Builds individual header container with icon and title
   Widget _buildHeaderContainerContent(String title, IconData icon, Color color, TextAlign align) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -199,6 +207,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
+  /// Builds individual player row with name, points, and amount
   Widget _buildPlayerRow({required player, required double netPointChange, required double totalAmount, required Color primaryColor, required Color secondaryColor, required int playerFlex, required int pointsFlex, required int amountFlex, required bool isWinner}) {
     final bool isPositive = netPointChange > 0;
 
@@ -217,15 +226,7 @@ class ResultsTable extends StatelessWidget {
                 _playerAvatar(player),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildPlayerNameText(player.userName),
-                      const SizedBox(height: 5),
-                      // UPDATED: Now shows the actual mode (Win, Seen, Blind)
-                      _buildModePointsContainer(player.pointsEarned.toStringAsFixed(0), player.mode, player.isDoublee),
-                    ],
-                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildPlayerNameText(player.userName), const SizedBox(height: 5), _buildModePointsContainer(player.pointsEarned.toStringAsFixed(0), player.mode, player.isDoublee)]),
                 ),
               ],
             ),
@@ -243,7 +244,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
-  /// Player Name Text (without container)
+  /// Builds player name text widget
   Widget _buildPlayerNameText(String name) {
     return Text(
       name,
@@ -251,7 +252,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
-  // UPDATED: Now shows mode (Win/Seen/Blind) instead of "Display"/"Base"
+  /// Builds container showing player mode and points with bonus indicator for winners
   Widget _buildModePointsContainer(String points, PlayerMode mode, bool isDoublee) {
     final MaterialColor color = Colors.lightBlue;
 
@@ -275,7 +276,7 @@ class ResultsTable extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            modeName, // Now shows "Win", "Seen", or "Blind"
+            modeName, // Shows "Win", "Seen", or "Blind"
             style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w600, color: color.shade700),
           ),
           _buildVerticalDivider(height: 8, margin: 3),
@@ -300,6 +301,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
+  /// Builds points display container with trend icon
   Widget _buildPointsContainer(String text, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -324,6 +326,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
+  /// Builds amount display container with win/loss indicator
   Widget _buildAmountContainer(String amount, Color color, bool isWin) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -351,7 +354,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
-  // Helper method to convert PlayerMode to display name
+  /// Converts PlayerMode enum to display name string
   String _getModeDisplayName(PlayerMode mode) {
     switch (mode) {
       case PlayerMode.blind:
@@ -363,6 +366,7 @@ class ResultsTable extends StatelessWidget {
     }
   }
 
+  /// Builds player avatar container
   Widget _playerAvatar(player) {
     return Container(
       width: 36,
@@ -376,6 +380,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
+  /// Builds profile image widget handling both network and local images
   Widget _buildProfileImage(player) {
     if (player.userImage != null && player.userImage!.isNotEmpty) {
       if (player.userImage!.startsWith('http')) {
@@ -397,6 +402,7 @@ class ResultsTable extends StatelessWidget {
     }
   }
 
+  /// Builds default profile icon when no image is available
   Widget _defaultProfileIcon({double size = 22}) {
     return Container(
       decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.blue.shade100),
@@ -404,6 +410,7 @@ class ResultsTable extends StatelessWidget {
     );
   }
 
+  /// Builds vertical divider with customizable height and margin
   Widget _buildVerticalDivider({double height = 18, double margin = 8}) {
     return Container(
       height: height,

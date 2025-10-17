@@ -7,6 +7,8 @@ import 'package:numberpicker/numberpicker.dart';
 
 import '../../controllers/call_break_controller.dart';
 
+/// Dialog for selecting bids in Callbreak game
+/// Allows players to choose their bid amount for the current round
 class BidPickerDialog extends StatefulWidget {
   final int playerIndex;
   final String tag;
@@ -103,9 +105,9 @@ class _BidPickerDialogState extends State<BidPickerDialog> {
                             ),
                           ],
                         ),
-                        // Current Bid Bubble (Slightly Smaller)
+                        // Current Bid Bubble
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // reduced
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             gradient: LinearGradient(colors: [Colors.indigo.shade900, Colors.blue.shade700], begin: Alignment.topLeft, end: Alignment.bottomRight),
@@ -113,7 +115,7 @@ class _BidPickerDialogState extends State<BidPickerDialog> {
                           ),
                           child: Text(
                             '$currentBid',
-                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white), // reduced
+                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
                           ),
                         ),
                       ],
@@ -123,7 +125,7 @@ class _BidPickerDialogState extends State<BidPickerDialog> {
                   // Horizontal Divider
                   Divider(color: Colors.grey.shade300, thickness: 1, height: 1),
 
-                  // Horizontal Number Picker
+                  // Horizontal Number Picker for bid selection
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6.0),
                     child: NumberPicker(
@@ -158,7 +160,7 @@ class _BidPickerDialogState extends State<BidPickerDialog> {
               ),
               child: Row(
                 children: [
-                  // Cancel Button
+                  // Cancel Button with pink gradient
                   Expanded(
                     child: Container(
                       height: 40,
@@ -183,7 +185,7 @@ class _BidPickerDialogState extends State<BidPickerDialog> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Confirm Button (Dark Blue Gradient)
+                  // Confirm Button with dark blue gradient
                   Expanded(
                     child: Container(
                       height: 40,

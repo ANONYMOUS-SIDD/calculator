@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 
+/// Custom app bar for user management screens with gradient design
+/// Features a glossy capsule title, back button, and animated Lottie icon
 class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
@@ -29,7 +31,7 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Glossy Capsule Title
+          // Glossy Capsule Title - Centered main title
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
@@ -44,7 +46,7 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
 
-          // Back button (aligned left)
+          // Back button (aligned left) - Navigation control
           Align(
             alignment: Alignment.centerLeft,
             child: InkWell(
@@ -62,7 +64,7 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
 
-          // Lottie animation (aligned right)
+          // Lottie animation (aligned right) - Animated decorative element
           Align(
             alignment: Alignment.centerRight,
             child: Container(
@@ -85,5 +87,5 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(65); // reduced height
+  Size get preferredSize => const Size.fromHeight(65); // Reduced height for compact design
 }

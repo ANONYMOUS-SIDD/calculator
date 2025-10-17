@@ -1,5 +1,4 @@
-// home_screen.dart
-import 'dart:io'; // Needed for Image.file
+import 'dart:io';
 
 import 'package:calculators/controllers/user_list_controller.dart';
 import 'package:calculators/model/user_model.dart';
@@ -12,15 +11,12 @@ import 'package:calculators/widgets/user_stats_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-// === NEW IMPORTS REQUIRED FOR SEARCH FUNCTIONALITY ===
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:lottie/lottie.dart';
-// =======================================================
 
-// -----------------------------------------------------------------------------
-// 1. Grid Item Model
-// -----------------------------------------------------------------------------
-// ... (GridItem and ModernColors definitions remain the same)
+// ==================== DATA MODELS AND CONSTANTS ====================
+
+/// Represents a grid item in the home screen
 class GridItem {
   final IconData icon;
   final String label;
@@ -32,6 +28,7 @@ class GridItem {
   const GridItem(this.icon, this.label, this.color, this.shortDescription, {Color? gradientStart, Color? gradientEnd}) : gradientStart = gradientStart ?? color, gradientEnd = gradientEnd ?? color;
 }
 
+/// Modern color scheme for the application
 class ModernColors {
   static const Color primary = Color(0xFF6366F1);
   static const Color primaryDark = Color(0xFF4F46E5);
@@ -43,10 +40,9 @@ class ModernColors {
   static const Color primaryContainer = Color(0xFFEEF2FF);
 }
 
-// -----------------------------------------------------------------------------
-// 2. Modern App Bar (YOUR CUSTOM APP BAR - BACK BUTTON REMOVED)
-// -----------------------------------------------------------------------------
-// ... (ModernAppBar definition remains the same)
+// ==================== MODERN APP BAR ====================
+
+/// Custom modern app bar for home screen
 class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
@@ -55,6 +51,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(50.0);
 
+  /// Builds floating circle decoration element
   Widget _buildFloatingShape(double size, Color color) {
     return Container(
       width: size,
@@ -63,6 +60,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  /// Builds the decorative background for app bar
   Widget _buildAppBarDecoration(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -100,7 +98,6 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       child: AppBar(
         toolbarHeight: 60,
-
         backgroundColor: Colors.white,
         elevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(20.0))),
@@ -109,7 +106,6 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
           style: GoogleFonts.poppins(letterSpacing: 1.0, fontSize: 17, fontWeight: FontWeight.w800, color: ModernColors.onSurface),
         ),
         centerTitle: true,
-        // Back button removed as requested
         leading: Container(), // Empty container to remove back button
         actions: const [],
         flexibleSpace: ClipRRect(
@@ -129,10 +125,9 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// 3. Main HomeScreen (Stateful)
-// -----------------------------------------------------------------------------
+// ==================== MAIN HOME SCREEN ====================
 
+/// Main home screen with search functionality and game navigation
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -141,24 +136,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // === NEW STATE VARIABLES FOR SEARCH ===
-  String _searchText = '';
-  List<GridItem> _filteredItems = [];
-  List<User> _filteredUsers = []; // List of User objects matching the search
-  late final UserListController _userController;
+  final UserListController _userController = Get.find<UserListController>();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  // ======================================
 
-  // All items with short descriptions (3-4 words)
-  final List<GridItem> _allGridItems = [GridItem(Icons.favorite_rounded, "Marriage", Color(0xFFEC4899), "Track marriage scores", gradientStart: Color(0xFFEC4899), gradientEnd: Color(0xFFF59E0B)), GridItem(Icons.leaderboard_rounded, "Call Break", Color(0xFF3B82F6), "Card game scoring", gradientStart: Color(0xFF3B82F6), gradientEnd: Color(0xFF06B6D4)), GridItem(Icons.history_rounded, "History", Color(0xFF8B5CF6), "Game history records", gradientStart: Color(0xFF8B5CF6), gradientEnd: Color(0xFFEC4899)), GridItem(Icons.people_rounded, "Users", Color(0xFFF59E0B), "Manage players", gradientStart: Color(0xFFF59E0B), gradientEnd: Color(0xFFEF4444)), GridItem(Icons.menu_book_rounded, "Manual", Color(0xFF10B981), "Game rules guide", gradientStart: Color(0xFF10B981), gradientEnd: Color(0xFF3B82F6))];
+  String _searchText = '';
+  List<GridItem> _filteredItems = [];
+  List<User> _filteredUsers = [];
+
+  /// All available grid items with descriptions
+  final List<GridItem> _allGridItems = [GridItem(Icons.favorite_rounded, "Marriage", const Color(0xFFEC4899), "Track marriage scores", gradientStart: const Color(0xFFEC4899), gradientEnd: const Color(0xFFF59E0B)), GridItem(Icons.star, "Call Break", const Color(0xFF3B82F6), "Card game scoring", gradientStart: const Color(0xFF3B82F6), gradientEnd: const Color(0xFF06B6D4)), GridItem(Icons.timelapse_rounded, "History", const Color(0xFF8B5CF6), "Game history records", gradientStart: const Color(0xFF8B5CF6), gradientEnd: const Color(0xFFEC4899)), GridItem(Icons.people_rounded, "Users", const Color(0xFFF59E0B), "Manage players", gradientStart: const Color(0xFFF59E0B), gradientEnd: const Color(0xFFEF4444)), GridItem(Icons.menu_book_rounded, "Manual", const Color(0xFF10B981), "Game rules guide", gradientStart: const Color(0xFF10B981), gradientEnd: const Color(0xFF3B82F6))];
 
   @override
   void initState() {
     super.initState();
     _filteredItems = _allGridItems;
-    // Get the controller instance to access user data
-    _userController = Get.find<UserListController>();
   }
 
   @override
@@ -168,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // Determine the correct greeting based on time
+  /// Determines appropriate greeting based on time of day
   String _greetingMessage() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
@@ -180,13 +172,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Filters items and users based on search query
   void _filterItems(String query) {
     final lowerCaseQuery = query.toLowerCase();
 
-    // 1. Filter the main Grid Items (like Marriage, Call Break)
+    // Filter grid items
     final filteredGrid = _allGridItems.where((item) => item.label.toLowerCase().contains(lowerCaseQuery)).toList();
 
-    // 2. Filter the Users from Hive (if the box exists)
+    // Filter users from Hive
     List<User> filteredUsers = [];
     if (Hive.isBoxOpen('usersBox')) {
       final userBox = Hive.box<User>('usersBox');
@@ -200,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // === NEW METHOD: Function to show UserStatsDialog ===
+  /// Shows user statistics dialog
   void _showUserStatsDialog(String userName) {
     showDialog(
       context: context,
@@ -209,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // === NEW METHOD: Clear search ===
+  /// Clears search and resets to default state
   void _clearSearch() {
     setState(() {
       _searchText = '';
@@ -217,9 +210,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _filteredUsers = [];
       _searchController.clear();
     });
-    _searchFocusNode.unfocus(); // Close keyboard
+    _searchFocusNode.unfocus();
   }
-  // ===================================================
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +220,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDesktop = size.width >= 1024;
     final greeting = _greetingMessage();
 
-    // Define the consistent, larger margin
     final double horizontalMargin = isDesktop
         ? 22.0
         : isTablet
@@ -241,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Main Container (Greeting & Search)
+            // Greeting and Search Container
             Container(
               margin: EdgeInsets.only(
                 left: horizontalMargin,
@@ -265,11 +256,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _buildMainContainerContent(greeting, isDesktop, isTablet),
             ),
 
-            // Search Results Overlay (If search text is not empty)
+            // Search Results or Main Content
             if (_searchText.isNotEmpty)
               _buildSearchResultsOverlay(isDesktop, isTablet, horizontalMargin)
             else
-              // Main Content Container (The List) - Only visible when search is empty
               Expanded(
                 child: Container(
                   margin: EdgeInsets.only(left: horizontalMargin, right: horizontalMargin, top: 0.0, bottom: 10.0),
@@ -316,10 +306,204 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // === NEW WIDGET: Search Results Overlay ===
+  /// Builds the main container content with greeting and search
+  Widget _buildMainContainerContent(String greeting, bool isDesktop, bool isTablet) {
+    return Column(
+      children: [
+        // Greeting and Lottie Section
+        Container(
+          padding: EdgeInsets.all(
+            isDesktop
+                ? 18.0
+                : isTablet
+                ? 16.0
+                : 14.0,
+          ),
+          child: Row(
+            children: [
+              // Greeting Text
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      greeting,
+                      style: GoogleFonts.poppins(
+                        fontSize: isDesktop
+                            ? 22.0
+                            : isTablet
+                            ? 20.0
+                            : 18.0,
+                        fontWeight: FontWeight.w700,
+                        color: ModernColors.onSurface,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Welcome to Game Hub",
+                      style: GoogleFonts.quicksand(
+                        fontSize: isDesktop
+                            ? 13.0
+                            : isTablet
+                            ? 12.0
+                            : 11.0,
+                        fontWeight: FontWeight.w700,
+                        color: ModernColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 14),
+              // Lottie Animation
+              Container(
+                width: isDesktop
+                    ? 70.0
+                    : isTablet
+                    ? 65.0
+                    : 60.0,
+                height: isDesktop
+                    ? 70.0
+                    : isTablet
+                    ? 65.0
+                    : 60.0,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16.0),
+                  border: Border.all(color: ModernColors.outline, width: 1.5),
+                  color: ModernColors.primaryContainer,
+                ),
+                child: Center(
+                  child: Lottie.asset(
+                    'assets/lottie/intro1.json',
+                    width: isDesktop
+                        ? 60.0
+                        : isTablet
+                        ? 55.0
+                        : 50.0,
+                    height: isDesktop
+                        ? 60.0
+                        : isTablet
+                        ? 55.0
+                        : 50.0,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Divider
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isDesktop
+                ? 18.0
+                : isTablet
+                ? 16.0
+                : 14.0,
+          ),
+          child: const Divider(color: ModernColors.outline, height: 1.0, thickness: 1.0),
+        ),
+
+        // Search Bar Section
+        Container(
+          padding: EdgeInsets.all(
+            isDesktop
+                ? 18.0
+                : isTablet
+                ? 16.0
+                : 14.0,
+          ),
+          child: _buildSearchBar(isDesktop, isTablet),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the search bar widget
+  Widget _buildSearchBar(bool isDesktop, bool isTablet) {
+    return Container(
+      height: isDesktop
+          ? 58.0
+          : isTablet
+          ? 54.0
+          : 50.0,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12.0),
+        color: ModernColors.surface,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 22, offset: const Offset(0, 8)),
+          BoxShadow(color: ModernColors.primary.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        onChanged: _filterItems,
+        decoration: InputDecoration(
+          hintText: "Search Player or Game",
+          hintStyle: GoogleFonts.poppins(
+            color: ModernColors.onSurfaceVariant,
+            fontSize: isDesktop
+                ? 15.0
+                : isTablet
+                ? 14.0
+                : 13.0,
+            fontWeight: FontWeight.w600,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [ModernColors.primary, ModernColors.primaryDark], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [BoxShadow(color: ModernColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+            ),
+            child: Icon(
+              Icons.search_rounded,
+              color: Colors.white,
+              size: isDesktop
+                  ? 22.0
+                  : isTablet
+                  ? 20.0
+                  : 18.0,
+            ),
+          ),
+          filled: true,
+          fillColor: ModernColors.surface,
+          contentPadding: EdgeInsets.symmetric(
+            vertical: isDesktop
+                ? 18.0
+                : isTablet
+                ? 16.0
+                : 14.0,
+            horizontal: 18.0,
+          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.0),
+            borderSide: const BorderSide(color: ModernColors.primary, width: 2.0),
+          ),
+        ),
+        style: GoogleFonts.poppins(
+          color: ModernColors.onSurface,
+          fontSize: isDesktop
+              ? 15.0
+              : isTablet
+              ? 14.0
+              : 13.0,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  /// Builds search results overlay when search is active
   Widget _buildSearchResultsOverlay(bool isDesktop, bool isTablet, double horizontalMargin) {
-    bool hasGameResults = _filteredItems.isNotEmpty;
-    bool hasUserResults = _filteredUsers.isNotEmpty;
+    final bool hasGameResults = _filteredItems.isNotEmpty;
+    final bool hasUserResults = _filteredUsers.isNotEmpty;
 
     if (!hasGameResults && !hasUserResults) {
       return Expanded(
@@ -360,7 +544,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       : 10.0,
                 ),
                 children: [
-                  // User Search Results (Player Name + Detail Button)
+                  // User Search Results
                   if (hasUserResults) ...[
                     Padding(
                       padding: EdgeInsets.only(top: isDesktop ? 8.0 : 6.0, bottom: isDesktop ? 12.0 : 10.0),
@@ -371,7 +555,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: GoogleFonts.poppins(fontSize: isDesktop ? 16 : 14, fontWeight: FontWeight.w700, color: ModernColors.onSurface),
                           ),
                           SizedBox(width: isDesktop ? 8 : 6),
-                          // Outline count container
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: isDesktop ? 8 : 6, vertical: isDesktop ? 2 : 1),
                             decoration: BoxDecoration(
@@ -383,8 +566,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: GoogleFonts.poppins(fontSize: isDesktop ? 12 : 10, fontWeight: FontWeight.w600, color: ModernColors.onSurface),
                             ),
                           ),
-                          Spacer(),
-                          // Cross Button at right
+                          const Spacer(),
                           GestureDetector(
                             onTap: _clearSearch,
                             child: Container(
@@ -415,11 +597,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (hasGameResults)
                       Padding(
                         padding: EdgeInsets.symmetric(vertical: isDesktop ? 16.0 : 14.0),
-                        child: Divider(color: ModernColors.outline, height: 1.0),
+                        child: const Divider(color: ModernColors.outline, height: 1.0),
                       ),
                   ],
 
-                  // Game Search Results (Existing Game Cards)
+                  // Game Search Results
                   if (hasGameResults) ...[
                     Padding(
                       padding: EdgeInsets.only(top: hasUserResults ? 0 : 8.0, bottom: isDesktop ? 12.0 : 10.0),
@@ -430,7 +612,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: GoogleFonts.poppins(fontSize: isDesktop ? 16 : 14, fontWeight: FontWeight.w700, color: ModernColors.onSurface),
                           ),
                           SizedBox(width: isDesktop ? 8 : 6),
-                          // Outline count container
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: isDesktop ? 8 : 6, vertical: isDesktop ? 2 : 1),
                             decoration: BoxDecoration(
@@ -466,201 +647,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  // ===========================================
 
-  Widget _buildMainContainerContent(String greeting, bool isDesktop, bool isTablet) {
-    return Column(
-      children: [
-        // Top Part: Greeting and Lottie
-        Container(
-          padding: EdgeInsets.all(
-            isDesktop
-                ? 18.0
-                : isTablet
-                ? 16.0
-                : 14.0,
-          ),
-          child: Row(
-            children: [
-              // Greeting Text Section
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      greeting,
-                      style: GoogleFonts.poppins(
-                        fontSize: isDesktop
-                            ? 22.0
-                            : isTablet
-                            ? 20.0
-                            : 18.0,
-                        fontWeight: FontWeight.w700,
-                        color: ModernColors.onSurface,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // "Welcome to Game Hub" in bold
-                    Text(
-                      "Welcome to Game Hub",
-                      style: GoogleFonts.quicksand(
-                        fontSize: isDesktop
-                            ? 13.0
-                            : isTablet
-                            ? 12.0
-                            : 11.0,
-                        fontWeight: FontWeight.w700,
-                        color: ModernColors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 14),
-              // Lottie Container
-              Container(
-                width: isDesktop
-                    ? 70.0
-                    : isTablet
-                    ? 65.0
-                    : 60.0,
-                height: isDesktop
-                    ? 70.0
-                    : isTablet
-                    ? 65.0
-                    : 60.0,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16.0),
-                  border: Border.all(color: ModernColors.outline, width: 1.5),
-                  color: ModernColors.primaryContainer,
-                ),
-                child: Center(
-                  child: Lottie.asset(
-                    'assets/lottie/intro1.json',
-                    width: isDesktop
-                        ? 60.0
-                        : isTablet
-                        ? 55.0
-                        : 50.0,
-                    height: isDesktop
-                        ? 60.0
-                        : isTablet
-                        ? 55.0
-                        : 50.0,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Horizontal Divider inside the container
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isDesktop
-                ? 18.0
-                : isTablet
-                ? 16.0
-                : 14.0,
-          ),
-          child: const Divider(color: ModernColors.outline, height: 1.0, thickness: 1.0),
-        ),
-
-        // Bottom Part: Improved Search Bar with bold hint
-        Container(
-          padding: EdgeInsets.all(
-            isDesktop
-                ? 18.0
-                : isTablet
-                ? 16.0
-                : 14.0,
-          ),
-          child: _buildSearchBar(isDesktop, isTablet),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchBar(bool isDesktop, bool isTablet) {
-    return Container(
-      height: isDesktop
-          ? 58.0 // Increased height
-          : isTablet
-          ? 54.0 // Increased height
-          : 50.0, // Increased height
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12.0), // Less rounded
-        color: ModernColors.surface,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 22, offset: const Offset(0, 8)),
-          BoxShadow(color: ModernColors.primary.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: TextField(
-        controller: _searchController,
-        focusNode: _searchFocusNode,
-        onChanged: _filterItems,
-        decoration: InputDecoration(
-          hintText: "Search Player or Game", // Updated hint text
-          hintStyle: GoogleFonts.poppins(
-            color: ModernColors.onSurfaceVariant,
-            fontSize: isDesktop
-                ? 15.0
-                : isTablet
-                ? 14.0
-                : 13.0,
-            fontWeight: FontWeight.w600,
-          ),
-          prefixIcon: Container(
-            margin: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [ModernColors.primary, ModernColors.primaryDark], begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: BorderRadius.circular(10), // Less rounded
-              boxShadow: [BoxShadow(color: ModernColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
-            ),
-            child: Icon(
-              Icons.search_rounded,
-              color: Colors.white,
-              size: isDesktop
-                  ? 22.0
-                  : isTablet
-                  ? 20.0
-                  : 18.0,
-            ),
-          ),
-          filled: true,
-          fillColor: ModernColors.surface,
-          contentPadding: EdgeInsets.symmetric(
-            vertical: isDesktop
-                ? 18.0 // Increased padding
-                : isTablet
-                ? 16.0 // Increased padding
-                : 14.0, // Increased padding
-            horizontal: 18.0,
-          ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none), // Less rounded
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none), // Less rounded
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0), // Less rounded
-            borderSide: const BorderSide(color: ModernColors.primary, width: 2.0),
-          ),
-        ),
-        style: GoogleFonts.poppins(
-          color: ModernColors.onSurface,
-          fontSize: isDesktop
-              ? 15.0
-              : isTablet
-              ? 14.0
-              : 13.0,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
+  /// Builds empty state widget
   Widget _buildEmptyState(bool isDesktop) {
     return Center(
       child: Column(
@@ -683,10 +671,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// 4. NEW WIDGET: Search Result Tile for Players (Simplified _CleanUserTile)
-// -----------------------------------------------------------------------------
+// ==================== SEARCH USER TILE ====================
 
+/// Tile widget for displaying user search results
 class _SearchUserTile extends StatelessWidget {
   final User user;
   final bool isDesktop;
@@ -695,6 +682,7 @@ class _SearchUserTile extends StatelessWidget {
 
   const _SearchUserTile({required this.user, required this.isDesktop, required this.isTablet, required this.onDetailsTap});
 
+  /// Builds avatar with gradient background
   Widget _buildAvatar(String username) {
     final double size = isTablet ? 48.0 : 42.0;
     return Container(
@@ -708,6 +696,7 @@ class _SearchUserTile extends StatelessWidget {
     );
   }
 
+  /// Extracts initials from username
   String _getInitials(String name) {
     final names = name.split(' ');
     if (names.length >= 2) {
@@ -764,7 +753,7 @@ class _SearchUserTile extends StatelessWidget {
             ),
           ),
           SizedBox(width: isDesktop ? 14 : 12),
-          // Detail Icon Button
+          // Details Button
           GestureDetector(
             onTap: () => onDetailsTap(user.username),
             child: Container(
@@ -783,10 +772,9 @@ class _SearchUserTile extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// 5. Modern Full Width Card (Game Card - remains the same)
-// -----------------------------------------------------------------------------
-// ... (_ModernFullWidthCard definition remains the same)
+// ==================== MODERN FULL WIDTH CARD ====================
+
+/// Full-width card widget for game navigation
 class _ModernFullWidthCard extends StatefulWidget {
   final GridItem gridItem;
   final bool isDesktop;
@@ -802,6 +790,7 @@ class _ModernFullWidthCardState extends State<_ModernFullWidthCard> {
   bool _isHovering = false;
   bool _isPressed = false;
 
+  /// Determines destination screen based on grid item label
   Widget _getDestinationScreen(String label, Color color, IconData iconData) {
     switch (label) {
       case "Marriage":
@@ -823,6 +812,7 @@ class _ModernFullWidthCardState extends State<_ModernFullWidthCard> {
     }
   }
 
+  /// Handles card tap with animation
   void _handleTap(BuildContext context) {
     setState(() => _isPressed = true);
     Future.delayed(const Duration(milliseconds: 150), () {
@@ -865,9 +855,7 @@ class _ModernFullWidthCardState extends State<_ModernFullWidthCard> {
             borderRadius: BorderRadius.circular(16),
             gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [widget.gridItem.gradientStart, widget.gridItem.gradientEnd]),
             boxShadow: [
-              // Soft, colored glow
               BoxShadow(color: widget.gridItem.color.withOpacity(0.5), blurRadius: _isHovering ? 25 : 18, spreadRadius: _isHovering ? 2 : 0, offset: Offset(0, _isHovering ? 12 : 8)),
-              // Subtle dark shadow for depth
               BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),

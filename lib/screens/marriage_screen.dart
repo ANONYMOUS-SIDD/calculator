@@ -12,6 +12,7 @@ import '../repositories/history_repository.dart';
 import '../widgets/moder_app_bar.dart';
 import 'modern_game_setup.dart';
 
+/// Main screen for Marriage game with player setup and calculation
 class MarriageScreen extends StatelessWidget {
   final String tag;
   final Color color;
@@ -21,44 +22,46 @@ class MarriageScreen extends StatelessWidget {
 
   final PlayerController playerController = Get.find<PlayerController>();
 
+  /// Handles player confirmation from selection dialog
   void _onPlayersConfirmed(List<User> confirmedUsers) {
     playerController.updatePlayersFromUsers(confirmedUsers);
   }
 
+  /// Updates player count and clears existing players
   void _onPlayersChanged(int newCount) {
     playerController.updatePlayerCount(newCount);
     playerController.players.clear();
   }
 
+  /// Updates points per rupee value
   void _onPointsChanged(double value) {
     playerController.updatePointsPerRupee(value);
   }
 
+  /// Triggers game calculation
   void _calculateGame() {
     playerController.calculateGame();
   }
 
+  /// Initiates new game flow
   void _newGame() {
     _showNewGameConfirmationDialog();
   }
 
+  /// Shows confirmation dialog for starting a new game
   void _showNewGameConfirmationDialog() {
-    // Check if there is data that might be lost (i.e., any players are set up)
-    bool hasGameInProgress = playerController.players.isNotEmpty;
+    final bool hasGameInProgress = playerController.players.isNotEmpty;
 
     Get.defaultDialog(
-      // --- DIALOG STYLING ---
       backgroundColor: Colors.white,
       radius: 14.0,
       title: "",
       titlePadding: EdgeInsets.zero,
       contentPadding: EdgeInsets.zero,
-
-      // --- CUSTOM CONTENT SECTION ---
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. Title (Top padding set for spacing)
+          // Title Section
           Padding(
             padding: const EdgeInsets.only(top: 0, bottom: 5.0, left: 15.0, right: 15.0),
             child: Text(
@@ -67,7 +70,7 @@ class MarriageScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. Warning/Info Content
+          // Content Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15.0),
             child: Column(
@@ -77,11 +80,7 @@ class MarriageScreen extends StatelessWidget {
                   child: Text(
                     "Do you want to start a new game",
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13, // Slightly increased from 12
-                      fontWeight: FontWeight.w500, // Made bolder (was w500)
-                      color: Colors.black87, // Darker for better readability
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black87),
                   ),
                 ),
               ],
@@ -90,30 +89,22 @@ class MarriageScreen extends StatelessWidget {
         ],
       ),
 
-      // --- CUSTOM ACTIONS SECTION (Single Row with Divider) ---
+      // Actions Section
       actions: [
-        // Top Divider (separates content from actions)
         Column(
           children: [
             const Divider(color: Colors.black12, height: 1.0, thickness: 0.8),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // 1. Cancel Action (Left Button - Primary/Safe Action in this context)
+                // Cancel Button
                 Expanded(
                   child: TextButton(
                     style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 11), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
-                    onPressed: () {
-                      Get.back(); // Simply close the dialog
-                    },
+                    onPressed: () => Get.back(),
                     child: Text(
                       "Cancel",
-                      style: GoogleFonts.quicksand(
-                        fontWeight: FontWeight.w900, // Bolder (was w600)
-                        fontSize: 16, // Larger (was 15)
-                        color: Colors.blue.shade700, // Better blue shade
-                      ),
+                      style: GoogleFonts.quicksand(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.blue.shade700),
                     ),
                   ),
                 ),
@@ -121,24 +112,18 @@ class MarriageScreen extends StatelessWidget {
                 // Vertical Divider
                 Container(height: 45, width: 0.8, color: Colors.black12),
 
-                // 2. Confirm/Refresh Action (Right Button - Destructive/Confirms Reset)
+                // Confirm Button
                 Expanded(
                   child: TextButton(
                     style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 11), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const RoundedRectangleBorder()),
                     onPressed: () {
                       Get.back();
-                      // FIRST: Save the current game to history before resetting
                       _saveCurrentGameToHistory();
-                      // THEN: Reset for new game
                       playerController.resetGame();
                     },
                     child: Text(
                       "Confirm",
-                      style: GoogleFonts.quicksand(
-                        fontWeight: FontWeight.w900, // Bolder (was w600)
-                        fontSize: 16, // Larger (was 15)
-                        color: Colors.red.shade700, // Better red shade
-                      ),
+                      style: GoogleFonts.quicksand(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.red.shade700),
                     ),
                   ),
                 ),
@@ -150,77 +135,44 @@ class MarriageScreen extends StatelessWidget {
     );
   }
 
-  // 🎯 CORRECTED HISTORY SAVING LOGIC 🎯
+  /// Saves current game to history repository
   void _saveCurrentGameToHistory() {
-    // 1. Use the list containing the final, calculated results
     final List<CalculatedResult> calculatedResults = playerController.calculatedResults;
 
-    // Check if a calculation has been performed. This is the most reliable check.
+    // Skip saving if no calculation has been performed
     if (calculatedResults.isEmpty) {
-      print('INFO: Skipped saving history. No calculated results found.');
-      // If there are players but no result, it means they set up but didn't calculate.
-      if (playerController.players.isNotEmpty) {
-        ScaffoldMessenger.of(Get.context!).showSnackBar(SnackBar(content: Text('Game not calculated. History not saved.'), duration: Duration(seconds: 2), backgroundColor: Colors.orange));
-      }
       return;
     }
 
-    // Helper function to convert enum to clean string
+    /// Converts player mode enum to display string
     String _getModeString(dynamic mode) {
-      // Assuming PlayerMode is available and used in PlayerController
-      // We will rely on checking the mode's toString() result for safety
       final modeString = mode.toString().toLowerCase();
       if (modeString.endsWith('.blind')) return 'Blind';
       if (modeString.endsWith('.seen')) return 'Seen';
       if (modeString.endsWith('.win')) return 'Win';
-      return modeString; // Fallback
+      return modeString;
     }
 
     try {
-      // 2. Map over the calculatedResults list to get final net values
+      // Map calculated results to history format
       final List<MarriagePlayerHistory> playerHistories = calculatedResults.map((result) {
         final player = result.player;
-
-        // Calculate the final monetary value from the net points
         final double netAmount = result.netPoints * playerController.pointsPerRupee.value;
 
-        return MarriagePlayerHistory(
-          userId: player.userId,
-          userName: player.userName,
-          userImage: player.userImage,
-
-          // Raw Data (Saved for context/re-verification)
-          maalPoints: player.maalPoints,
-          isSequence: player.isSequence,
-          isDoublee: player.isDoublee,
-          pointsEarned: player.pointsEarned, // Raw points
-          currentScore: player.currentScore, // Raw score (usually same as pointsEarned)
-          mode: _getModeString(player.mode),
-
-          // ✅ NEW: Final Calculated Data from CalculatedResult
-          netPointsChange: result.netPoints, // The final net gain/loss in points
-          netAmountChange: netAmount, // The final monetary gain/loss in Rupees
-        );
+        return MarriagePlayerHistory(userId: player.userId, userName: player.userName, userImage: player.userImage, maalPoints: player.maalPoints, isSequence: player.isSequence, isDoublee: player.isDoublee, pointsEarned: player.pointsEarned, currentScore: player.currentScore, mode: _getModeString(player.mode), netPointsChange: result.netPoints, netAmountChange: netAmount);
       }).toList();
 
-      // Calculate total maal points from the raw player data (used for the total game history object)
+      // Calculate total maal points
       final totalMaalPoints = playerController.players.fold(0.0, (sum, player) => sum + player.maalPoints);
 
-      // Save to history
+      // Save to history repository
       HistoryRepository.saveMarriageGame(id: DateTime.now().millisecondsSinceEpoch.toString(), playedAt: DateTime.now(), numberOfPlayers: playerController.players.length, pointsPerRupee: playerController.pointsPerRupee.value, totalMaalPoints: totalMaalPoints, players: playerHistories);
-
-      // Show success message
-      ScaffoldMessenger.of(Get.context!).showSnackBar(SnackBar(content: Text('Game saved to history'), duration: Duration(seconds: 2), backgroundColor: Colors.green));
-
-      print('✅ Marriage game saved to history (including calculated net results)');
     } catch (e) {
-      print('❌ Error saving marriage game: $e');
-      // Optional: Show error message
-      ScaffoldMessenger.of(Get.context!).showSnackBar(SnackBar(content: Text('Failed to save game history'), duration: Duration(seconds: 2), backgroundColor: Colors.red));
+      // Error handling without snackbar
     }
   }
 
-  // Widget to display Lottie animation when no players are selected
+  /// Builds empty state animation when no players are selected
   Widget _buildEmptyStateLottie() {
     return Column(
       children: [
@@ -230,14 +182,13 @@ class MarriageScreen extends StatelessWidget {
           "Setup to start game",
           style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.grey[700]),
         ),
-        const SizedBox(height: 40), // Extra spacing at the bottom
+        const SizedBox(height: 40),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // ... (rest of the build method remains the same)
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -257,24 +208,23 @@ class MarriageScreen extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  // Player cards grid (only when players exist)
                   Obx(() => playerController.players.isNotEmpty ? PlayerCardsGrid(onPointsChanged: playerController.updatePlayerScore, onDoubleeToggle: playerController.toggleDoublee) : const SizedBox.shrink()),
                   const SizedBox(height: 5),
                   const ResultsTable(),
-
                   const SizedBox(height: 20),
 
-                  // FIX: Wrapping ModernGameSetup in Obx to ensure it rebuilds when
-                  // playerController.selectedPlayerCount or playerController.pointsPerRupee changes.
+                  // Game setup section
                   Obx(() => ModernGameSetup(selectedPlayers: playerController.selectedPlayerCount.value, pointsPerRupee: playerController.pointsPerRupee.value, selectedPlayersList: playerController.players, onPlayersChanged: _onPlayersChanged, onPointsChanged: _onPointsChanged, onPlayersConfirmed: _onPlayersConfirmed)),
 
-                  // Display Lottie animation when no players are selected
+                  // Empty state animation
                   Obx(() => playerController.players.isEmpty ? _buildEmptyStateLottie() : const SizedBox.shrink()),
                 ],
               ),
             ),
           ),
 
-          // RESPONSIVE BOTTOM CONTAINER
+          // Bottom action buttons (only when players exist)
           Obx(
             () => playerController.players.isNotEmpty
                 ? Container(
@@ -298,7 +248,6 @@ class MarriageScreen extends StatelessWidget {
                           ),
                           child: _buildResponsiveButtons(buttonHeight, buttonFontSize, iconSize, screenWidth),
                         ),
-
                         SizedBox(height: screenHeight < 700 ? 4.0 : 6.0),
                       ],
                     ),
@@ -310,14 +259,14 @@ class MarriageScreen extends StatelessWidget {
     );
   }
 
-  // ... (rest of the helper functions: _buildResponsiveButtons, _buildNewGameButton, _buildCalculateButton)
+  /// Builds responsive button layout based on screen width
   Widget _buildResponsiveButtons(double buttonHeight, double fontSize, double iconSize, double screenWidth) {
-    // For very small screens, stack buttons vertically
+    // Vertical layout for very small screens
     if (screenWidth < 350) {
       return Column(children: [_buildNewGameButton(buttonHeight, fontSize, iconSize), const SizedBox(height: 10), _buildCalculateButton(buttonHeight, fontSize, iconSize)]);
     }
 
-    // For normal screens, use horizontal layout
+    // Horizontal layout for normal screens
     return Row(
       children: [
         Expanded(child: _buildNewGameButton(buttonHeight, fontSize, iconSize)),
@@ -327,6 +276,7 @@ class MarriageScreen extends StatelessWidget {
     );
   }
 
+  /// Builds the new game button
   Widget _buildNewGameButton(double height, double fontSize, double iconSize) {
     return Container(
       height: height,
@@ -344,7 +294,7 @@ class MarriageScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.refresh_rounded, size: iconSize, color: Colors.white),
-              SizedBox(width: 6),
+              const SizedBox(width: 6),
               Text(
                 "NEW GAME",
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: fontSize, color: Colors.white, letterSpacing: 0.6),
@@ -356,9 +306,10 @@ class MarriageScreen extends StatelessWidget {
     );
   }
 
+  /// Builds the calculate button with enabled/disabled states
   Widget _buildCalculateButton(double height, double fontSize, double iconSize) {
     return Obx(() {
-      final canCalculate = playerController.canCalculate;
+      final bool canCalculate = playerController.canCalculate;
 
       return Container(
         height: height,
@@ -376,7 +327,7 @@ class MarriageScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.calculate_rounded, size: iconSize, color: canCalculate ? Colors.white : Colors.grey.shade200),
-                SizedBox(width: 6),
+                const SizedBox(width: 6),
                 Text(
                   "CALCULATE",
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: fontSize, color: canCalculate ? Colors.white : Colors.grey.shade200, letterSpacing: 0.6),

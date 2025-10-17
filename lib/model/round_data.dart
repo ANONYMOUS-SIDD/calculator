@@ -1,3 +1,6 @@
+/// Represents data for a single round in Call Break game
+///
+/// Contains round number, player bids, extras won, and calculated points
 class RoundData {
   final int roundNumber;
   final List<int> bids;
@@ -6,7 +9,9 @@ class RoundData {
 
   RoundData({required this.roundNumber, required this.bids, required this.extras, required this.points});
 
+  /// Converts RoundData to JSON format for storage
   Map<String, dynamic> toJson() => {'roundNumber': roundNumber, 'bids': bids, 'extras': extras, 'points': points};
 
+  /// Creates RoundData from JSON format
   factory RoundData.fromJson(Map<String, dynamic> json) => RoundData(roundNumber: json['roundNumber'], bids: List<int>.from(json['bids']), extras: List<int>.from(json['extras']), points: List<double>.from(json['points']));
 }
